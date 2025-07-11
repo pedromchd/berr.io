@@ -4,6 +4,9 @@ local menu = {}
 -- Estados da tela
 local gameState = "menu"  -- "menu" ou "instructions"
 
+-- Tempo acumulado para o efeito bouncing
+local bounceTime = 0 
+
 -- Configurações da tela
 local screenWidth, screenHeight = 900, 700
 
@@ -11,7 +14,7 @@ local screenWidth, screenHeight = 900, 700
 local backgroundImage
 
 -- Fontes
-local titleFont = love.graphics.newFont('/assets/PressStart2P-Regular.ttf', 50)
+local titleFont = love.graphics.newFont('/assets/PressStart2P-Regular.ttf', 60)
 local buttonFont = love.graphics.newFont('/assets/PressStart2P-Regular.ttf', 25)
 local textFont = love.graphics.newFont('/assets/PressStart2P-Regular.ttf', 15)
 
@@ -33,7 +36,7 @@ local colors = {
 local menuButtons = {
     {
         text = "Jogar",
-        x = 300, y = 450,
+        x = 300, y = 380,
         width = 300,
         height = 80,
         action = function()
@@ -43,7 +46,7 @@ local menuButtons = {
     },
     {
         text = "Como Jogar",
-        x = 300, y = 550,
+        x = 300, y = 500,
         width = 300,
         height = 80,
         action = function()
@@ -58,6 +61,9 @@ function love.load()
 
     -- Carregar imagem de fundo
     backgroundImage = love.graphics.newImage("assets/fundo.jpg")
+
+    -- Carregar som de clique
+    clickSound = love.audio.newSource("assets/click_sound.mp3", "static")
     
     -- -- Centralizar botões do menu
     -- for i, button in ipairs(menuButtons) do
@@ -68,6 +74,8 @@ end
 
 function love.update(dt)
     local mouseX, mouseY = love.mouse.getPosition()
+
+    bounceTime = bounceTime + dt
     
     if gameState == "menu" then
         -- Verificar hover nos botões do menu
@@ -93,13 +101,36 @@ function love.draw()
 end
 
 function drawMenu()
-    -- Título "berr.io"
-    love.graphics.setColor(colors.title)
+    -- Descrição de direitos autorais no cabeçalho
+    love.graphics.setColor(colors.text)
+    love.graphics.setFont(textFont)
+    local copyright =
+        "Trabalho final da disciplina de LP, feito em LOVE2D. ®"
+    local textWidth = textFont:getWidth(copyright)
+    love.graphics.print(copyright, (screenWidth - textWidth) / 2, 670)
+    -- Título "berr.io" com efeito bouncing + rotação
     love.graphics.setFont(titleFont)
     local titleText = "berr.io"
     local titleWidth = titleFont:getWidth(titleText)
-    love.graphics.print(titleText, (screenWidth - titleWidth) / 2, 250)
-    
+    local titleHeight = titleFont:getHeight()
+
+    -- Efeito de escala (bouncing) e rotação
+    local scale = 1 + 0.05 * math.sin(bounceTime * 3)         -- Bouncing
+    local angle = math.rad(2) * math.sin(bounceTime * 2)      -- Rotação oscilante (2 graus)
+
+    -- Posição centralizada considerando o centro rotacionado e escalado
+    local centerX = screenWidth / 2
+    local centerY = 180 + titleHeight / 2
+
+    love.graphics.setColor(colors.title)
+    love.graphics.push()
+    love.graphics.translate(centerX, centerY)     -- Move o ponto de origem para o centro do título
+    love.graphics.rotate(angle)                   -- Aplica rotação suave
+    love.graphics.scale(scale, scale)             -- Aplica a escala (pulsação)
+    love.graphics.translate(-titleWidth / 2, -titleHeight / 2) -- Corrige posição
+    love.graphics.print(titleText, 0, 0)
+    love.graphics.pop()
+
     -- Desenhar botões do menu
     love.graphics.setFont(buttonFont)
     for i, button in ipairs(menuButtons) do
@@ -210,7 +241,8 @@ function love.mousepressed(x, y, button)
         if gameState == "menu" then
             for i, btn in ipairs(menuButtons) do
                 if isPointInRect(x, y, btn.x, btn.y, btn.width, btn.height) then
-                    btn.action()
+                    love.audio.play(clickSound)  -- TOCA O SOM
+                    btn.action()                 -- Executa a ação do botão
                     break
                 end
             end
