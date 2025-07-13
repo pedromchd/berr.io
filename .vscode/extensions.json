@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "editorconfig.editorconfig",
+        "koihik.vscode-lua-format",
+        "pixelbyte-studios.pixelbyte-love2d",
+        "sumneko.lua",
+    ]
+}
