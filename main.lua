@@ -15,6 +15,7 @@ local backgroundImage
 
 -- Fontes
 local titleFont = love.graphics.newFont('/assets/PressStart2P-Regular.ttf', 60)
+local difficultyTitleFont = love.graphics.newFont('/assets/PressStart2P-Regular.ttf', 40)
 local buttonFont = love.graphics.newFont('/assets/PressStart2P-Regular.ttf', 25)
 local textFont = love.graphics.newFont('/assets/PressStart2P-Regular.ttf', 15)
 
@@ -40,8 +41,7 @@ local menuButtons = {
         width = 300,
         height = 80,
         action = function()
-            print("Iniciando jogo...")
-            -- Aqui você iniciaria o jogo
+            gameState = "difficulty"
         end
     },
     {
@@ -51,6 +51,40 @@ local menuButtons = {
         height = 80,
         action = function()
             gameState = "instructions"
+        end
+    }
+}
+
+-- Botões da tela de dificuldade
+local difficultyButtons = {
+    {
+        text = "Fácil",
+        x = 300, y = 250,
+        width = 300,
+        height = 80,
+        action = function()
+            print("Modo Fácil selecionado")
+            -- Aqui você iniciaria o jogo no modo fácil
+        end
+    },
+    {
+        text = "Médio",
+        x = 300, y = 400,
+        width = 300,
+        height = 80,
+        action = function()
+            print("Modo Médio selecionado")
+            -- Aqui você iniciaria o jogo no modo médio
+        end
+    },
+    {
+        text = "Difícil",
+        x = 300, y = 550,
+        width = 300,
+        height = 80,
+        action = function()
+            print("Modo Difícil selecionado")
+            -- Aqui você iniciaria o jogo no modo difícil
         end
     }
 }
@@ -82,6 +116,11 @@ function love.update(dt)
         for i, button in ipairs(menuButtons) do
             button.isHovered = isPointInRect(mouseX, mouseY, button.x, button.y, button.width, button.height)
         end
+    elseif gameState == "difficulty" then
+        -- Verificar hover nos botões de dificuldade
+        for i, button in ipairs(difficultyButtons) do
+            button.isHovered = isPointInRect(mouseX, mouseY, button.x, button.y, button.width, button.height)
+        end
     end
 end 
 
@@ -97,6 +136,8 @@ function love.draw()
         drawMenu()
     elseif gameState == "instructions" then
         drawInstructions()
+    elseif gameState == "difficulty" then
+    drawDifficulty()
     end
 end
 
@@ -236,6 +277,36 @@ function drawInstructions()
     love.graphics.print("Não está na palavra", 350, exampleY + 52)
 end
 
+function drawDifficulty()
+    -- Título da tela de dificuldade
+    love.graphics.setColor(colors.title)
+    love.graphics.setFont(difficultyTitleFont)
+    local titleText = "Escolha a Dificuldade"
+    local titleWidth = titleFont:getWidth(titleText)
+    love.graphics.print(titleText, 35, 100)
+
+    -- Desenhar botões
+    love.graphics.setFont(buttonFont)
+    for i, button in ipairs(difficultyButtons) do
+        if button.isHovered then
+            love.graphics.setColor(colors.buttonHover)
+        else
+            love.graphics.setColor(colors.button)
+        end
+
+        love.graphics.rectangle("fill", button.x, button.y, button.width, button.height, 8, 8)
+        love.graphics.setColor(colors.border)
+        love.graphics.rectangle("line", button.x, button.y, button.width, button.height, 8, 8)
+
+        love.graphics.setColor(colors.buttonText)
+        local textWidth = buttonFont:getWidth(button.text)
+        local textHeight = buttonFont:getHeight()
+        local textX = button.x + (button.width - textWidth) / 2
+        local textY = button.y + (button.height - textHeight) / 2
+        love.graphics.print(button.text, textX, textY)
+    end
+end
+
 function love.mousepressed(x, y, button)
     if button == 1 then -- Botão esquerdo
         if gameState == "menu" then
@@ -243,6 +314,14 @@ function love.mousepressed(x, y, button)
                 if isPointInRect(x, y, btn.x, btn.y, btn.width, btn.height) then
                     love.audio.play(clickSound)  -- TOCA O SOM
                     btn.action()                 -- Executa a ação do botão
+                    break
+                end
+            end
+        elseif gameState == "difficulty" then
+            for i, btn in ipairs(difficultyButtons) do
+                if isPointInRect(x, y, btn.x, btn.y, btn.width, btn.height) then
+                    love.audio.play(clickSound)
+                    btn.action()
                     break
                 end
             end
