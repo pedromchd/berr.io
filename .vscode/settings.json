@@ -4,8 +4,6 @@
     "editor.formatOnPaste": true,
     "editor.stickyTabStops": true,
     "files.insertFinalNewline": true,
-    "pixelbyte.love2d.runOnSave": false,
-    "pixelbyte.love2d.path": "love",
     "Lua.codeLens.enable": true,
     "Lua.diagnostics.globals": [
         "love"
