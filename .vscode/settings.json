@@ -6,6 +6,10 @@
     "files.insertFinalNewline": true,
     "pixelbyte.love2d.runOnSave": false,
     "pixelbyte.love2d.path": "love",
+    "Lua.codeLens.enable": true,
+    "Lua.diagnostics.globals": [
+        "love"
+    ],
     "Lua.format.enable": true,
     "Lua.format.defaultConfig": {
         "indent_type": "Spaces",
@@ -13,6 +17,7 @@
         "max_line_length": "100",
         "trailing_table_separator": "smart"
     },
+    "vscode-lua-format.configPath": "./lua.config",
     "[lua]": {
         "editor.defaultFormatter": "Koihik.vscode-lua-format"
     }
