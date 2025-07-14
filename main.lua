@@ -31,6 +31,13 @@ local colors = {
     text = {0.9, 0.9, 0.9}
 }
 
+-- Teclado virtual
+local keyboardLayout = {
+    {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"},
+    {"A", "S", "D", "F", "G", "H", "J", "K", "L"},
+    {"←", "Z", "X", "C", "V", "B", "N", "M", "ENTER"}
+}
+
 -- Botões do menu principal (centralizados automaticamente)
 local menuButtons = {
     {
@@ -51,14 +58,8 @@ local menuButtons = {
 -- Botões da tela de dificuldade (centralizados automaticamente)
 local difficultyButtons = {
     {text = "Fácil", y = 250, width = 300, height = 80, action = function() gameState = "game" end},
-    {text = "Médio", y = 400, width = 300, height = 80, action = function() gameState = "game" end},
-    {
-        text = "Difícil",
-        y = 550,
-        width = 300,
-        height = 80,
-        action = function() gameState = "game" end
-    }
+    {text = "Médio", y = 400, width = 300, height = 80, action = function() gameState = "game_medium" end},
+    {text = "Difícil", y = 550, width = 300, height = 80, action = function() gameState = "game_hard" end}
 }
 
 -- Função para centralizar botões
@@ -109,7 +110,11 @@ function love.draw()
     elseif gameState == "difficulty" then
         drawDifficulty()
     elseif gameState == "game" then
-        drawGame()
+    drawGameFacil()
+    elseif gameState == "game_medium" then
+    drawGameMedio()
+    elseif gameState == "game_hard" then
+    drawGameDificil()
     end
 end
 
@@ -229,7 +234,7 @@ function drawDifficulty()
     end
 end
 
-function drawGame()
+function drawGameFacil()
     love.graphics.setFont(buttonFont)
     love.graphics.setColor(colors.text)
 
@@ -256,20 +261,115 @@ function drawGame()
     drawVirtualKeyboard()
 end
 
--- 👇 NOVO: Teclado virtual
-local keyboardLayout = {
-    {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"},
-    {"A", "S", "D", "F", "G", "H", "J", "K", "L"},
-    {"←", "Z", "X", "C", "V", "B", "N", "M", "ENTER"}
-}
+function drawGameMedio()
+    love.graphics.setFont(buttonFont)
+    love.graphics.setColor(colors.text)
+
+    -- Duas grades 6x5 lado a lado
+    local boxSize = 60
+    local spacing = 10
+    local gridWidth = 5 * boxSize + 4 * spacing
+    local gridHeight = 6 * boxSize + 5 * spacing
+
+    local totalWidth = gridWidth * 2 + 40  -- 40px de separação entre as duas grades
+    local startX1 = (screenWidth - totalWidth) / 2
+    local startX2 = startX1 + gridWidth + 40
+    local startY = 50
+
+    -- Desenhar primeira grade
+    for row = 0, 5 do
+        for col = 0, 4 do
+            local x = startX1 + col * (boxSize + spacing)
+            local y = startY + row * (boxSize + spacing)
+            love.graphics.setColor(0.2, 0.2, 0.2)
+            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
+            love.graphics.setColor(colors.border)
+            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
+        end
+    end
+
+    -- Desenhar segunda grade
+    for row = 0, 5 do
+        for col = 0, 4 do
+            local x = startX2 + col * (boxSize + spacing)
+            local y = startY + row * (boxSize + spacing)
+            love.graphics.setColor(0.2, 0.2, 0.2)
+            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
+            love.graphics.setColor(colors.border)
+            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
+        end
+    end
+
+    -- Teclado virtual abaixo das grades
+    drawVirtualKeyboard()
+end
+
+function drawGameDificil()
+    love.graphics.setFont(buttonFont)
+    love.graphics.setColor(colors.text)
+
+    -- Três grades 6x5 lado a lado
+    local boxSize = 60
+    local spacing = 10
+    local gridWidth = 5 * boxSize + 4 * spacing
+    local gridHeight = 6 * boxSize + 5 * spacing
+
+    local spacingBetweenGrids = 30
+    local totalWidth = gridWidth * 3 + spacingBetweenGrids * 2
+
+    local startX1 = (screenWidth - totalWidth) / 2
+    local startX2 = startX1 + gridWidth + spacingBetweenGrids
+    local startX3 = startX2 + gridWidth + spacingBetweenGrids
+
+    local startY = 50
+
+    -- Desenhar primeira grade
+    for row = 0, 5 do
+        for col = 0, 4 do
+            local x = startX1 + col * (boxSize + spacing)
+            local y = startY + row * (boxSize + spacing)
+            love.graphics.setColor(0.2, 0.2, 0.2)
+            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
+            love.graphics.setColor(colors.border)
+            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
+        end
+    end
+
+    -- Segunda grade
+    for row = 0, 5 do
+        for col = 0, 4 do
+            local x = startX2 + col * (boxSize + spacing)
+            local y = startY + row * (boxSize + spacing)
+            love.graphics.setColor(0.2, 0.2, 0.2)
+            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
+            love.graphics.setColor(colors.border)
+            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
+        end
+    end
+
+    -- Terceira grade
+    for row = 0, 5 do
+        for col = 0, 4 do
+            local x = startX3 + col * (boxSize + spacing)
+            local y = startY + row * (boxSize + spacing)
+            love.graphics.setColor(0.2, 0.2, 0.2)
+            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
+            love.graphics.setColor(colors.border)
+            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
+        end
+    end
+
+    -- Teclado virtual
+    drawVirtualKeyboard()
+end
 
 function drawVirtualKeyboard()
-    local keyHeight = 60
-    local spacing = 10
-    local keyWidth = 50
-    local enterWidth = 130 -- largura aumentada para ENTER
+    local keyHeight = 70
+    local keyWidth = 60
+    local enterWidth = 150
+    local spacing = 12
     local enterExtraMargin = 30 -- margem antes do ENTER
-    local startY = 500 -- subir um pouco por causa da tela maior
+    local startY = 490 -- subir um pouco por causa da tela maior
 
     for rowIndex, row in ipairs(keyboardLayout) do
         local totalWidth = 0
@@ -335,7 +435,7 @@ end
 
 function love.keypressed(key)
     if key == "escape" then
-        if gameState == "instructions" or gameState == "difficulty" or gameState == "game" then
+        if gameState == "instructions" or gameState == "difficulty" or gameState == "game" or gameState == "game_medium" or gameState == "game_hard" then
             gameState = "menu"
         else
             love.event.quit()
