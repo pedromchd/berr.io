@@ -8,39 +8,6 @@ local bounceTime = 0
 -- Configurações da tela
 local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
 
--- Função para atualizar dimensões da tela
-function updateScreenDimensions()
-    screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
-end
-
--- Funções de escala responsiva
-function getScaleX()
-    return screenWidth / 1100 -- baseado na largura original
-end
-
-function getScaleY()
-    return screenHeight / 800 -- baseado na altura original
-end
-
-function getScale()
-    return math.min(getScaleX(), getScaleY()) -- mantém proporção
-end
-
--- Função para calcular área de conteúdo centralizada
-function getContentArea()
-    local maxContentWidth = 1100
-    local maxContentHeight = 800
-    local scale = getScale()
-
-    local contentWidth = math.min(screenWidth, maxContentWidth * scale)
-    local contentHeight = math.min(screenHeight, maxContentHeight * scale)
-
-    local offsetX = (screenWidth - contentWidth) / 2
-    local offsetY = (screenHeight - contentHeight) / 2
-
-    return {x = offsetX, y = offsetY, width = contentWidth, height = contentHeight, scale = scale}
-end
-
 -- Imagem de fundo
 local backgroundImage
 
@@ -48,22 +15,9 @@ local backgroundImage
 local titleFontSize = 60
 local difficultyTitleFontSize = 40
 local buttonFontSize = 25
-local textFontSize = 15
+local textFontSize = 18
 
 local titleFont, difficultyTitleFont, buttonFont, textFont
-
--- Função para recarregar fontes com escala
-function loadFonts()
-    local scale = getScale()
-    titleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
-                                      math.floor(titleFontSize * scale))
-    difficultyTitleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
-                                                math.floor(difficultyTitleFontSize * scale))
-    buttonFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
-                                       math.floor(buttonFontSize * scale))
-    textFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
-                                     math.floor(textFontSize * scale))
-end
 
 -- Cores
 local colors = {
@@ -86,12 +40,6 @@ local keyboardLayout = {
     {"←", "Z", "X", "C", "V", "B", "N", "M", "ENTER"}
 }
 
--- Função para calcular dimensões dos botões responsivamente
-function getButtonDimensions()
-    local scale = getScale()
-    return {width = math.floor(300 * scale), height = math.floor(80 * scale)}
-end
-
 -- Botões do menu principal (centralizados automaticamente)
 local menuButtons = {
     {
@@ -111,6 +59,79 @@ local difficultyButtons = {
     {text = "Médio", relativeY = 0.5, action = function() gameState = "game_medium" end},
     {text = "Difícil", relativeY = 0.6875, action = function() gameState = "game_hard" end}
 }
+
+local backStates = {
+    instructions = true,
+    difficulty = true,
+    game = true,
+    game_medium = true,
+    game_hard = true
+}
+
+-- Função para atualizar dimensões da tela
+function updateScreenDimensions()
+    screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
+end
+
+-- Funções de escala responsiva
+function getScaleX()
+    return screenWidth / 1100 -- baseado na largura original
+end
+
+function getScaleY()
+    return screenHeight / 800 -- baseado na altura original
+end
+
+function getScale()
+    return math.min(getScaleX(), getScaleY()) -- mantém proporção
+end
+
+-- Função para calcular dimensões da grade responsivamente
+function getGridDimensions()
+    local scale = getScale()
+    return {boxSize = math.floor(60 * scale), spacing = math.floor(10 * scale)}
+end
+
+-- Função para calcular área de conteúdo centralizada
+function getContentArea()
+    local maxContentWidth = 1100
+    local maxContentHeight = 800
+    local scale = getScale()
+
+    local contentWidth = math.min(screenWidth, maxContentWidth * scale)
+    local contentHeight = math.min(screenHeight, maxContentHeight * scale)
+
+    local offsetX = (screenWidth - contentWidth) / 2
+    local offsetY = (screenHeight - contentHeight) / 2
+
+    return {x = offsetX, y = offsetY, width = contentWidth, height = contentHeight, scale = scale}
+end
+
+-- Função para recarregar fontes com escala
+function loadFonts()
+    local scale = getScale()
+    titleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                      math.floor(titleFontSize * scale))
+    difficultyTitleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                                math.floor(difficultyTitleFontSize * scale))
+    buttonFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                       math.floor(buttonFontSize * scale))
+    textFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                     math.floor(textFontSize * scale))
+end
+
+-- Função para calcular dimensões dos botões responsivamente
+function getButtonDimensions()
+    local scale = getScale()
+    return {width = math.floor(300 * scale), height = math.floor(80 * scale)}
+end
+
+function love.resize(w, h)
+    updateScreenDimensions()
+    loadFonts()
+    centerButtons(menuButtons)
+    centerButtons(difficultyButtons)
+end
 
 -- Função para centralizar botões responsivamente
 function centerButtons(buttons)
@@ -138,13 +159,6 @@ function love.load()
     loadFonts()
 
     -- Centralizar todos os botões
-    centerButtons(menuButtons)
-    centerButtons(difficultyButtons)
-end
-
-function love.resize(w, h)
-    updateScreenDimensions()
-    loadFonts()
     centerButtons(menuButtons)
     centerButtons(difficultyButtons)
 end
@@ -187,11 +201,11 @@ function love.draw()
     elseif gameState == "difficulty" then
         drawDifficulty()
     elseif gameState == "game" then
-        drawGameFacil()
+        drawGameEasy()
     elseif gameState == "game_medium" then
-        drawGameMedio()
+        drawGameMid()
     elseif gameState == "game_hard" then
-        drawGameDificil()
+        drawGameHard()
     end
 
     love.graphics.pop()
@@ -204,7 +218,7 @@ function drawMenu()
     love.graphics.setFont(textFont)
     local text = "Trabalho final da disciplina de LP, feito em LOVE2D. ®"
     local textWidth = textFont:getWidth(text)
-    love.graphics.print(text, (content.width - textWidth) / 2, content.height * 0.8375)
+    love.graphics.print(text, (content.width - textWidth) / 2, content.height * 0.9500)
 
     love.graphics.setFont(titleFont)
     local titleText = "berr.io"
@@ -389,13 +403,7 @@ function drawDifficulty()
     end
 end
 
--- Função para calcular dimensões da grade responsivamente
-function getGridDimensions()
-    local scale = getScale()
-    return {boxSize = math.floor(60 * scale), spacing = math.floor(10 * scale)}
-end
-
--- Helper function to draw a grid at a given position with specified rows and columns
+-- Função auxiliar para desenhar uma grade em uma posição específica com linhas e colunas definidas
 function drawGridAt(startX, startY, rows, cols)
     local grid = getGridDimensions()
     for row = 0, rows - 1 do
@@ -412,7 +420,7 @@ function drawGridAt(startX, startY, rows, cols)
     end
 end
 
-function drawGameFacil()
+function drawGameEasy()
     local content = getContentArea()
 
     love.graphics.setFont(buttonFont)
@@ -430,7 +438,7 @@ function drawGameFacil()
     drawVirtualKeyboard()
 end
 
-function drawGameMedio()
+function drawGameMid()
     local content = getContentArea()
 
     love.graphics.setFont(buttonFont)
@@ -452,7 +460,7 @@ function drawGameMedio()
     drawVirtualKeyboard()
 end
 
-function drawGameDificil()
+function drawGameHard()
     local content = getContentArea()
 
     love.graphics.setFont(buttonFont)
@@ -477,6 +485,7 @@ function drawGameDificil()
     -- Teclado virtual
     drawVirtualKeyboard()
 end
+
 function drawVirtualKeyboard()
     local content = getContentArea()
     local scale = getScale()
@@ -548,14 +557,6 @@ function love.mousepressed(x, y, button)
         end
     end
 end
-
-local backStates = {
-    instructions = true,
-    difficulty = true,
-    game = true,
-    game_medium = true,
-    game_hard = true
-}
 
 function love.keypressed(key)
     if key == "escape" then
