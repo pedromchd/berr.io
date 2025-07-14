@@ -96,20 +96,20 @@ end
 local menuButtons = {
     {
         text = "Jogar",
-        y = 0.475, -- porcentagem da altura da tela
+        relativeY = 0.475, -- porcentagem da altura da tela
         action = function() gameState = "difficulty" end
     }, {
         text = "Como Jogar",
-        y = 0.625, -- porcentagem da altura da tela
+        relativeY = 0.625, -- porcentagem da altura da tela
         action = function() gameState = "instructions" end
     }
 }
 
 -- Botões da tela de dificuldade (centralizados automaticamente)
 local difficultyButtons = {
-    {text = "Fácil", y = 0.3125, action = function() gameState = "game" end},
-    {text = "Médio", y = 0.5, action = function() gameState = "game_medium" end},
-    {text = "Difícil", y = 0.6875, action = function() gameState = "game_hard" end}
+    {text = "Fácil", relativeY = 0.3125, action = function() gameState = "game" end},
+    {text = "Médio", relativeY = 0.5, action = function() gameState = "game_medium" end},
+    {text = "Difícil", relativeY = 0.6875, action = function() gameState = "game_hard" end}
 }
 
 -- Função para centralizar botões responsivamente
@@ -118,10 +118,12 @@ function centerButtons(buttons)
     local content = getContentArea()
 
     for _, button in ipairs(buttons) do
+        -- Store the original percentage if not already present
+        if not button.relativeY and button.y then button.relativeY = button.y end
         button.x = content.x + (content.width - buttonDim.width) / 2
         button.width = buttonDim.width
         button.height = buttonDim.height
-        button.y = content.y + math.floor(button.y * content.height)
+        button.y = content.y + math.floor((button.relativeY or 0) * content.height)
     end
 end
 
