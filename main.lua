@@ -281,12 +281,19 @@ function drawInstructions()
 
     love.graphics.setFont(textFont)
     local instructions = {
-        "• Você terá 6 tentativas. Cada uma delas deve ser uma palavra que exista.", "",
-        "• Acentos e cedilha são ignorados.", "",
-        "• Após chutar, as letras mudarão para indicar o quão perto você está da resposta:",
-        "", "- Se a letra for VERDE, ela está presente na palavra e na posição correta.", "",
-        "- Se a letra for AMARELA, ela está presente na palavra, mas na posição errada.", "",
-        "- Se a letra for VERMELHA, ela NÃO está na palavra."
+        {
+            text = "• Você terá 6 tentativas. Cada uma delas deve ser uma palavra que exista.",
+            color = "text"
+        }, {text = "• Acentos e cedilha são ignorados.", color = "text"}, {
+            text = "• Após chutar, as letras mudarão para indicar o quão perto você está da resposta:",
+            color = "text"
+        }, {
+            text = "- Se a letra for VERDE, ela está presente na palavra e na posição correta.",
+            color = "green"
+        }, {
+            text = "- Se a letra for AMARELA, ela está presente na palavra, mas na posição errada.",
+            color = "yellow"
+        }, {text = "- Se a letra for VERMELHA, ela NÃO está na palavra.", color = "red"}
     }
 
     local lineHeight = textFont:getHeight() * 1.4
@@ -294,25 +301,20 @@ function drawInstructions()
     local maxTextWidth = content.width - padding * 2
     local currentY = startY
 
-    for _, line in ipairs(instructions) do
-        if line == "" then
-            currentY = currentY + lineHeight * 0.5
-        else
-            local wrappedLines = wrapText(line, textFont, maxTextWidth)
-            for _, wrappedLine in ipairs(wrappedLines) do
-                if wrappedLine:find("VERDE") then
-                    love.graphics.setColor(colors.green)
-                elseif wrappedLine:find("AMARELA") then
-                    love.graphics.setColor(colors.yellow)
-                elseif wrappedLine:find("VERMELHA") then
-                    love.graphics.setColor(colors.red)
-                else
-                    love.graphics.setColor(colors.text)
-                end
-                love.graphics.print(wrappedLine, padding, currentY)
-                currentY = currentY + lineHeight
-            end
+    for i, instruction in ipairs(instructions) do
+        local wrappedLines = wrapText(instruction.text, textFont, maxTextWidth)
+
+        -- Determinar cor baseada no tipo de instrução
+        local color = colors[instruction.color] or colors.text
+
+        for _, wrappedLine in ipairs(wrappedLines) do
+            love.graphics.setColor(color)
+            love.graphics.print(wrappedLine, padding, currentY)
+            currentY = currentY + lineHeight
         end
+
+        -- Adicionar espaço extra após certas instruções
+        if i == 1 or i == 2 or i == 3 then currentY = currentY + lineHeight * 0.3 end
     end
 
     -- Seção de exemplos mais abaixo
