@@ -6,16 +6,64 @@ local gameState = "menu" -- "menu", "instructions", "difficulty", "game"
 local bounceTime = 0
 
 -- Configurações da tela
-local screenWidth, screenHeight = 1100, 800
+local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
+
+-- Função para atualizar dimensões da tela
+function updateScreenDimensions()
+    screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
+end
+
+-- Funções de escala responsiva
+function getScaleX()
+    return screenWidth / 1100 -- baseado na largura original
+end
+
+function getScaleY()
+    return screenHeight / 800 -- baseado na altura original
+end
+
+function getScale()
+    return math.min(getScaleX(), getScaleY()) -- mantém proporção
+end
+
+-- Função para calcular área de conteúdo centralizada
+function getContentArea()
+    local maxContentWidth = 1100
+    local maxContentHeight = 800
+    local scale = getScale()
+
+    local contentWidth = math.min(screenWidth, maxContentWidth * scale)
+    local contentHeight = math.min(screenHeight, maxContentHeight * scale)
+
+    local offsetX = (screenWidth - contentWidth) / 2
+    local offsetY = (screenHeight - contentHeight) / 2
+
+    return {x = offsetX, y = offsetY, width = contentWidth, height = contentHeight, scale = scale}
+end
 
 -- Imagem de fundo
 local backgroundImage
 
--- Fontes
-local titleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf", 60)
-local difficultyTitleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf", 40)
-local buttonFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf", 25)
-local textFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf", 15)
+-- Fontes responsivas
+local titleFontSize = 60
+local difficultyTitleFontSize = 40
+local buttonFontSize = 25
+local textFontSize = 15
+
+local titleFont, difficultyTitleFont, buttonFont, textFont
+
+-- Função para recarregar fontes com escala
+function loadFonts()
+    local scale = getScale()
+    titleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                      math.floor(titleFontSize * scale))
+    difficultyTitleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                                math.floor(difficultyTitleFontSize * scale))
+    buttonFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                       math.floor(buttonFontSize * scale))
+    textFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                     math.floor(textFontSize * scale))
+end
 
 -- Cores
 local colors = {
@@ -38,42 +86,65 @@ local keyboardLayout = {
     {"←", "Z", "X", "C", "V", "B", "N", "M", "ENTER"}
 }
 
+-- Função para calcular dimensões dos botões responsivamente
+function getButtonDimensions()
+    local scale = getScale()
+    return {width = math.floor(300 * scale), height = math.floor(80 * scale)}
+end
+
 -- Botões do menu principal (centralizados automaticamente)
 local menuButtons = {
     {
         text = "Jogar",
-        y = 380,
-        width = 300,
-        height = 80,
+        relativeY = 0.475, -- porcentagem da altura da tela
         action = function() gameState = "difficulty" end
     }, {
         text = "Como Jogar",
-        y = 500,
-        width = 300,
-        height = 80,
+        relativeY = 0.625, -- porcentagem da altura da tela
         action = function() gameState = "instructions" end
     }
 }
 
 -- Botões da tela de dificuldade (centralizados automaticamente)
 local difficultyButtons = {
-    {text = "Fácil", y = 250, width = 300, height = 80, action = function() gameState = "game" end},
-    {text = "Médio", y = 400, width = 300, height = 80, action = function() gameState = "game_medium" end},
-    {text = "Difícil", y = 550, width = 300, height = 80, action = function() gameState = "game_hard" end}
+    {text = "Fácil", relativeY = 0.3125, action = function() gameState = "game" end},
+    {text = "Médio", relativeY = 0.5, action = function() gameState = "game_medium" end},
+    {text = "Difícil", relativeY = 0.6875, action = function() gameState = "game_hard" end}
 }
 
--- Função para centralizar botões
+-- Função para centralizar botões responsivamente
 function centerButtons(buttons)
-    for _, button in ipairs(buttons) do button.x = (screenWidth - button.width) / 2 end
+    local buttonDim = getButtonDimensions()
+    local content = getContentArea()
+
+    for _, button in ipairs(buttons) do
+        -- Store the original percentage if not already present
+        if not button.relativeY and button.y then button.relativeY = button.y end
+        button.x = content.x + (content.width - buttonDim.width) / 2
+        button.width = buttonDim.width
+        button.height = buttonDim.height
+        button.y = content.y + math.floor((button.relativeY or 0) * content.height)
+    end
 end
 
 function love.load()
     love.window.setMode(screenWidth, screenHeight)
+    updateScreenDimensions()
     love.window.setTitle("berr.io")
     backgroundImage = love.graphics.newImage("assets/fundo.jpg")
     clickSound = love.audio.newSource("assets/click_sound.mp3", "static")
 
+    -- Carregar fontes com escala
+    loadFonts()
+
     -- Centralizar todos os botões
+    centerButtons(menuButtons)
+    centerButtons(difficultyButtons)
+end
+
+function love.resize(w, h)
+    updateScreenDimensions()
+    loadFonts()
     centerButtons(menuButtons)
     centerButtons(difficultyButtons)
 end
@@ -96,12 +167,18 @@ function love.update(dt)
 end
 
 function love.draw()
+    -- Desenhar fundo em toda a tela
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(backgroundImage, 0, 0, 0, screenWidth / backgroundImage:getWidth(),
                        screenHeight / backgroundImage:getHeight())
 
     love.graphics.setColor(0, 0, 0, 0.6)
     love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
+
+    -- Aplicar transformação para área de conteúdo centralizada
+    local content = getContentArea()
+    love.graphics.push()
+    love.graphics.translate(content.x, content.y)
 
     if gameState == "menu" then
         drawMenu()
@@ -110,20 +187,24 @@ function love.draw()
     elseif gameState == "difficulty" then
         drawDifficulty()
     elseif gameState == "game" then
-    drawGameFacil()
+        drawGameFacil()
     elseif gameState == "game_medium" then
-    drawGameMedio()
+        drawGameMedio()
     elseif gameState == "game_hard" then
-    drawGameDificil()
+        drawGameDificil()
     end
+
+    love.graphics.pop()
 end
 
 function drawMenu()
+    local content = getContentArea()
+
     love.graphics.setColor(colors.text)
     love.graphics.setFont(textFont)
     local text = "Trabalho final da disciplina de LP, feito em LOVE2D. ®"
     local textWidth = textFont:getWidth(text)
-    love.graphics.print(text, (screenWidth - textWidth) / 2, 670)
+    love.graphics.print(text, (content.width - textWidth) / 2, content.height * 0.8375)
 
     love.graphics.setFont(titleFont)
     local titleText = "berr.io"
@@ -131,8 +212,8 @@ function drawMenu()
     local titleHeight = titleFont:getHeight()
     local scale = 1 + 0.05 * math.sin(bounceTime * 3)
     local angle = math.rad(2) * math.sin(bounceTime * 2)
-    local centerX = screenWidth / 2
-    local centerY = 180 + titleHeight / 2
+    local centerX = content.width / 2
+    local centerY = content.height * 0.225 + titleHeight / 2
 
     love.graphics.setColor(colors.title)
     love.graphics.push()
@@ -145,231 +226,266 @@ function drawMenu()
 
     love.graphics.setFont(buttonFont)
     for _, button in ipairs(menuButtons) do
+        local buttonX = button.x - content.x
+        local buttonY = button.y - content.y
+
         love.graphics.setColor(button.isHovered and colors.buttonHover or colors.button)
-        love.graphics.rectangle("fill", button.x, button.y, button.width, button.height, 8, 8)
+        love.graphics.rectangle("fill", buttonX, buttonY, button.width, button.height,
+                                8 * getScale(), 8 * getScale())
         love.graphics.setColor(colors.border)
-        love.graphics.rectangle("line", button.x, button.y, button.width, button.height, 8, 8)
+        love.graphics.rectangle("line", buttonX, buttonY, button.width, button.height,
+                                8 * getScale(), 8 * getScale())
         love.graphics.setColor(colors.buttonText)
         local textWidth = buttonFont:getWidth(button.text)
         local textHeight = buttonFont:getHeight()
-        local textX = button.x + (button.width - textWidth) / 2
-        local textY = button.y + (button.height - textHeight) / 2
+        local textX = buttonX + (button.width - textWidth) / 2
+        local textY = buttonY + (button.height - textHeight) / 2
         love.graphics.print(button.text, textX, textY)
     end
 end
 
+-- Função para quebrar texto conforme largura disponível
+function wrapText(text, font, maxWidth)
+    local words = {}
+    for word in text:gmatch("%S+") do table.insert(words, word) end
+
+    local lines = {}
+    local currentLine = ""
+
+    for _, word in ipairs(words) do
+        local testLine = currentLine == "" and word or (currentLine .. " " .. word)
+        if font:getWidth(testLine) <= maxWidth then
+            currentLine = testLine
+        else
+            if currentLine ~= "" then
+                table.insert(lines, currentLine)
+                currentLine = word
+            else
+                table.insert(lines, word)
+            end
+        end
+    end
+
+    if currentLine ~= "" then table.insert(lines, currentLine) end
+
+    return lines
+end
+
 function drawInstructions()
+    local content = getContentArea()
+    local padding = content.width * 0.05 -- 5% de padding
+
     love.graphics.setColor(colors.title)
     love.graphics.setFont(titleFont)
     local titleText = "Como Jogar"
     local titleWidth = titleFont:getWidth(titleText)
-    love.graphics.print(titleText, (screenWidth - titleWidth) / 2, 50)
+    love.graphics.print(titleText, (content.width - titleWidth) / 2, content.height * 0.08)
 
     love.graphics.setFont(textFont)
     local instructions = {
-        "   • Você terá 6 tentativas. Cada uma delas deve ser uma", "   palavra que exista.",
-        "", "   • Acentos e cedilha são ignorados.", "",
-        "   • Após chutar, as letras mudarão para indicar o quão",
-        "   perto você está da resposta:", "",
-        "   - Se a letra for VERDE, ela está presente na palavra", "   e na posição correta.",
-        "", "   - Se a letra for AMARELA, ela está presente na palavra,",
-        "   mas na posição errada.", "",
-        "   - Se a letra for VERMELHA, ela NÃO está na palavra."
+        {
+            text = "• Você terá 6 tentativas. Cada uma delas deve ser uma palavra que exista.",
+            color = "text"
+        }, {text = "• Acentos e cedilha são ignorados.", color = "text"}, {
+            text = "• Após chutar, as letras mudarão para indicar o quão perto você está da resposta:",
+            color = "text"
+        }, {
+            text = "- Se a letra for VERDE, ela está presente na palavra e na posição correta.",
+            color = "green"
+        }, {
+            text = "- Se a letra for AMARELA, ela está presente na palavra, mas na posição errada.",
+            color = "yellow"
+        }, {text = "- Se a letra for VERMELHA, ela NÃO está na palavra.", color = "red"}
     }
 
-    for i, line in ipairs(instructions) do
-        local y = 140 + (i - 1) * 26
-        if line:find("VERDE") then
-            love.graphics.setColor(colors.green)
-        elseif line:find("AMARELA") then
-            love.graphics.setColor(colors.yellow)
-        elseif line:find("VERMELHA") then
-            love.graphics.setColor(colors.red)
-        else
-            love.graphics.setColor(colors.text)
+    local lineHeight = textFont:getHeight() * 1.4
+    local startY = content.height * 0.22
+    local maxTextWidth = content.width - padding * 2
+    local currentY = startY
+
+    for i, instruction in ipairs(instructions) do
+        local wrappedLines = wrapText(instruction.text, textFont, maxTextWidth)
+
+        -- Determinar cor baseada no tipo de instrução
+        local color = colors[instruction.color] or colors.text
+
+        for _, wrappedLine in ipairs(wrappedLines) do
+            love.graphics.setColor(color)
+            love.graphics.print(wrappedLine, padding, currentY)
+            currentY = currentY + lineHeight
         end
-        love.graphics.print(line, 15, y)
+
+        -- Adicionar espaço extra após certas instruções
+        if i == 1 or i == 2 or i == 3 then currentY = currentY + lineHeight * 0.3 end
     end
 
+    -- Seção de exemplos mais abaixo
+    local examplesY = content.height * 0.65
     love.graphics.setColor(colors.text)
-    love.graphics.print("Exemplos:", 400, 570)
-    local exampleY = 600
-    local squareSize = 18
+    local examplesTitle = "Exemplos:"
+    local examplesTitleWidth = textFont:getWidth(examplesTitle)
+    love.graphics.print(examplesTitle, (content.width - examplesTitleWidth) / 2, examplesY)
 
+    local squareSize = 20 * getScale()
+    local exampleStartY = examplesY + lineHeight * 1.5
+    local exampleCenterX = content.width / 2
+
+    -- Exemplo Verde
     love.graphics.setColor(colors.green)
-    love.graphics.rectangle("fill", 320, exampleY, squareSize, squareSize)
+    love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(), exampleStartY, squareSize,
+                            squareSize)
     love.graphics.setColor(colors.text)
-    love.graphics.print("Posição correta", 370, exampleY + 2)
+    love.graphics.print("Posição correta", exampleCenterX - 100 * getScale(), exampleStartY + 2)
 
+    -- Exemplo Amarelo
     love.graphics.setColor(colors.yellow)
-    love.graphics.rectangle("fill", 320, exampleY + 25, squareSize, squareSize)
+    love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(),
+                            exampleStartY + squareSize * 1.8, squareSize, squareSize)
     love.graphics.setColor(colors.text)
-    love.graphics.print("Posição errada", 370, exampleY + 27)
+    love.graphics.print("Posição errada", exampleCenterX - 100 * getScale(),
+                        exampleStartY + squareSize * 1.8 + 2)
 
+    -- Exemplo Vermelho
     love.graphics.setColor(colors.red)
-    love.graphics.rectangle("fill", 320, exampleY + 50, squareSize, squareSize)
+    love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(),
+                            exampleStartY + squareSize * 3.6, squareSize, squareSize)
     love.graphics.setColor(colors.text)
-    love.graphics.print("Não está na palavra", 350, exampleY + 52)
+    love.graphics.print("Não está na palavra", exampleCenterX - 100 * getScale(),
+                        exampleStartY + squareSize * 3.6 + 2)
+
+    -- Instrução para voltar
+    love.graphics.setColor(colors.text)
+    local backText = "Pressione ESC para voltar"
+    local backTextWidth = textFont:getWidth(backText)
+    love.graphics.print(backText, (content.width - backTextWidth) / 2, content.height * 0.9)
 end
 
 function drawDifficulty()
+    local content = getContentArea()
+
     love.graphics.setColor(colors.title)
     love.graphics.setFont(difficultyTitleFont)
     local titleText = "Escolha a Dificuldade"
     local titleWidth = difficultyTitleFont:getWidth(titleText)
-    love.graphics.print(titleText, (screenWidth - titleWidth) / 2, 100)
+    love.graphics.print(titleText, (content.width - titleWidth) / 2, content.height * 0.125)
 
     love.graphics.setFont(buttonFont)
     for _, button in ipairs(difficultyButtons) do
+        local buttonX = button.x - content.x
+        local buttonY = button.y - content.y
+
         love.graphics.setColor(button.isHovered and colors.buttonHover or colors.button)
-        love.graphics.rectangle("fill", button.x, button.y, button.width, button.height, 8, 8)
+        love.graphics.rectangle("fill", buttonX, buttonY, button.width, button.height,
+                                8 * getScale(), 8 * getScale())
         love.graphics.setColor(colors.border)
-        love.graphics.rectangle("line", button.x, button.y, button.width, button.height, 8, 8)
+        love.graphics.rectangle("line", buttonX, buttonY, button.width, button.height,
+                                8 * getScale(), 8 * getScale())
         love.graphics.setColor(colors.buttonText)
         local textWidth = buttonFont:getWidth(button.text)
         local textHeight = buttonFont:getHeight()
-        local textX = button.x + (button.width - textWidth) / 2
-        local textY = button.y + (button.height - textHeight) / 2
+        local textX = buttonX + (button.width - textWidth) / 2
+        local textY = buttonY + (button.height - textHeight) / 2
         love.graphics.print(button.text, textX, textY)
     end
 end
 
+-- Função para calcular dimensões da grade responsivamente
+function getGridDimensions()
+    local scale = getScale()
+    return {boxSize = math.floor(60 * scale), spacing = math.floor(10 * scale)}
+end
+
+-- Helper function to draw a grid at a given position with specified rows and columns
+function drawGridAt(startX, startY, rows, cols)
+    local grid = getGridDimensions()
+    for row = 0, rows - 1 do
+        for col = 0, cols - 1 do
+            local x = startX + col * (grid.boxSize + grid.spacing)
+            local y = startY + row * (grid.boxSize + grid.spacing)
+            love.graphics.setColor(0.2, 0.2, 0.2)
+            love.graphics.rectangle("fill", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
+                                    4 * getScale())
+            love.graphics.setColor(colors.border)
+            love.graphics.rectangle("line", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
+                                    4 * getScale())
+        end
+    end
+end
+
 function drawGameFacil()
+    local content = getContentArea()
+
     love.graphics.setFont(buttonFont)
     love.graphics.setColor(colors.text)
 
     -- Grade 6x5 (centralizada)
-    local boxSize = 60
-    local spacing = 10
-    local gridWidth = 5 * boxSize + 4 * spacing
-    local gridHeight = 6 * boxSize + 5 * spacing
-    local startX = (screenWidth - gridWidth) / 2
-    local startY = 50
+    local grid = getGridDimensions()
+    local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
+    local startX = (content.width - gridWidth) / 2
+    local startY = content.height * 0.08
 
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX + col * (boxSize + spacing)
-            local y = startY + row * (boxSize + spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
-        end
-    end
+    drawGridAt(startX, startY, 6, 5)
 
     -- Teclado virtual
     drawVirtualKeyboard()
 end
 
 function drawGameMedio()
+    local content = getContentArea()
+
     love.graphics.setFont(buttonFont)
     love.graphics.setColor(colors.text)
 
     -- Duas grades 6x5 lado a lado
-    local boxSize = 60
-    local spacing = 10
-    local gridWidth = 5 * boxSize + 4 * spacing
-    local gridHeight = 6 * boxSize + 5 * spacing
+    local grid = getGridDimensions()
+    local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
+    local gridSeparation = math.floor(40 * getScale())
+    local totalWidth = gridWidth * 2 + gridSeparation
+    local startX1 = (content.width - totalWidth) / 2
+    local startX2 = startX1 + gridWidth + gridSeparation
+    local startY = content.height * 0.08
 
-    local totalWidth = gridWidth * 2 + 40  -- 40px de separação entre as duas grades
-    local startX1 = (screenWidth - totalWidth) / 2
-    local startX2 = startX1 + gridWidth + 40
-    local startY = 50
-
-    -- Desenhar primeira grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX1 + col * (boxSize + spacing)
-            local y = startY + row * (boxSize + spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
-        end
-    end
-
-    -- Desenhar segunda grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX2 + col * (boxSize + spacing)
-            local y = startY + row * (boxSize + spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
-        end
-    end
+    drawGridAt(startX1, startY, 6, 5)
+    drawGridAt(startX2, startY, 6, 5)
 
     -- Teclado virtual abaixo das grades
     drawVirtualKeyboard()
 end
 
 function drawGameDificil()
+    local content = getContentArea()
+
     love.graphics.setFont(buttonFont)
     love.graphics.setColor(colors.text)
 
     -- Três grades 6x5 lado a lado
-    local boxSize = 60
-    local spacing = 10
-    local gridWidth = 5 * boxSize + 4 * spacing
-    local gridHeight = 6 * boxSize + 5 * spacing
-
-    local spacingBetweenGrids = 30
+    local grid = getGridDimensions()
+    local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
+    local spacingBetweenGrids = math.floor(30 * getScale())
     local totalWidth = gridWidth * 3 + spacingBetweenGrids * 2
 
-    local startX1 = (screenWidth - totalWidth) / 2
+    local startX1 = (content.width - totalWidth) / 2
     local startX2 = startX1 + gridWidth + spacingBetweenGrids
     local startX3 = startX2 + gridWidth + spacingBetweenGrids
 
-    local startY = 50
+    local startY = content.height * 0.08
 
-    -- Desenhar primeira grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX1 + col * (boxSize + spacing)
-            local y = startY + row * (boxSize + spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
-        end
-    end
-
-    -- Segunda grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX2 + col * (boxSize + spacing)
-            local y = startY + row * (boxSize + spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
-        end
-    end
-
-    -- Terceira grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX3 + col * (boxSize + spacing)
-            local y = startY + row * (boxSize + spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, boxSize, boxSize, 4, 4)
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, boxSize, boxSize, 4, 4)
-        end
-    end
+    drawGridAt(startX1, startY, 6, 5)
+    drawGridAt(startX2, startY, 6, 5)
+    drawGridAt(startX3, startY, 6, 5)
 
     -- Teclado virtual
     drawVirtualKeyboard()
 end
-
 function drawVirtualKeyboard()
-    local keyHeight = 70
-    local keyWidth = 60
-    local enterWidth = 150
-    local spacing = 12
-    local enterExtraMargin = 30 -- margem antes do ENTER
-    local startY = 490 -- subir um pouco por causa da tela maior
+    local content = getContentArea()
+    local scale = getScale()
+    local keyHeight = math.floor(70 * scale)
+    local keyWidth = math.floor(60 * scale)
+    local enterWidth = math.floor(150 * scale)
+    local spacing = math.floor(12 * scale)
+    local enterExtraMargin = math.floor(30 * scale)
+    local startY = content.height * 0.62 -- posicionamento responsivo
 
     for rowIndex, row in ipairs(keyboardLayout) do
         local totalWidth = 0
@@ -383,7 +499,7 @@ function drawVirtualKeyboard()
         end
         totalWidth = totalWidth - spacing
 
-        local startX = (screenWidth - totalWidth) / 2
+        local startX = (content.width - totalWidth) / 2
         local x = startX
 
         for _, key in ipairs(row) do
@@ -394,10 +510,10 @@ function drawVirtualKeyboard()
             local y = startY + (rowIndex - 1) * (keyHeight + spacing)
 
             love.graphics.setColor(0.15, 0.15, 0.15)
-            love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6, 6)
+            love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
 
             love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, thisKeyWidth, keyHeight, 6, 6)
+            love.graphics.rectangle("line", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
 
             love.graphics.setColor(colors.buttonText)
             local text = (key == "←") and "<" or key
@@ -433,9 +549,17 @@ function love.mousepressed(x, y, button)
     end
 end
 
+local backStates = {
+    instructions = true,
+    difficulty = true,
+    game = true,
+    game_medium = true,
+    game_hard = true
+}
+
 function love.keypressed(key)
     if key == "escape" then
-        if gameState == "instructions" or gameState == "difficulty" or gameState == "game" or gameState == "game_medium" or gameState == "game_hard" then
+        if backStates[gameState] then
             gameState = "menu"
         else
             love.event.quit()
