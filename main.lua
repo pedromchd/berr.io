@@ -395,21 +395,11 @@ function getGridDimensions()
     return {boxSize = math.floor(60 * scale), spacing = math.floor(10 * scale)}
 end
 
-function drawGameFacil()
-    local content = getContentArea()
-
-    love.graphics.setFont(buttonFont)
-    love.graphics.setColor(colors.text)
-
-    -- Grade 6x5 (centralizada)
+-- Helper function to draw a grid at a given position with specified rows and columns
+function drawGridAt(startX, startY, rows, cols)
     local grid = getGridDimensions()
-    local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
-    local gridHeight = 6 * grid.boxSize + 5 * grid.spacing
-    local startX = (content.width - gridWidth) / 2
-    local startY = content.height * 0.08
-
-    for row = 0, 5 do
-        for col = 0, 4 do
+    for row = 0, rows - 1 do
+        for col = 0, cols - 1 do
             local x = startX + col * (grid.boxSize + grid.spacing)
             local y = startY + row * (grid.boxSize + grid.spacing)
             love.graphics.setColor(0.2, 0.2, 0.2)
@@ -420,6 +410,21 @@ function drawGameFacil()
                                     4 * getScale())
         end
     end
+end
+
+function drawGameFacil()
+    local content = getContentArea()
+
+    love.graphics.setFont(buttonFont)
+    love.graphics.setColor(colors.text)
+
+    -- Grade 6x5 (centralizada)
+    local grid = getGridDimensions()
+    local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
+    local startX = (content.width - gridWidth) / 2
+    local startY = content.height * 0.08
+
+    drawGridAt(startX, startY, 6, 5)
 
     -- Teclado virtual
     drawVirtualKeyboard()
@@ -434,41 +439,14 @@ function drawGameMedio()
     -- Duas grades 6x5 lado a lado
     local grid = getGridDimensions()
     local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
-    local gridHeight = 6 * grid.boxSize + 5 * grid.spacing
-
     local gridSeparation = math.floor(40 * getScale())
     local totalWidth = gridWidth * 2 + gridSeparation
     local startX1 = (content.width - totalWidth) / 2
     local startX2 = startX1 + gridWidth + gridSeparation
     local startY = content.height * 0.08
 
-    -- Desenhar primeira grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX1 + col * (grid.boxSize + grid.spacing)
-            local y = startY + row * (grid.boxSize + grid.spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-        end
-    end
-
-    -- Desenhar segunda grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX2 + col * (grid.boxSize + grid.spacing)
-            local y = startY + row * (grid.boxSize + grid.spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-        end
-    end
+    drawGridAt(startX1, startY, 6, 5)
+    drawGridAt(startX2, startY, 6, 5)
 
     -- Teclado virtual abaixo das grades
     drawVirtualKeyboard()
@@ -483,8 +461,6 @@ function drawGameDificil()
     -- Três grades 6x5 lado a lado
     local grid = getGridDimensions()
     local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
-    local gridHeight = 6 * grid.boxSize + 5 * grid.spacing
-
     local spacingBetweenGrids = math.floor(30 * getScale())
     local totalWidth = gridWidth * 3 + spacingBetweenGrids * 2
 
@@ -494,52 +470,13 @@ function drawGameDificil()
 
     local startY = content.height * 0.08
 
-    -- Desenhar primeira grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX1 + col * (grid.boxSize + grid.spacing)
-            local y = startY + row * (grid.boxSize + grid.spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-        end
-    end
-
-    -- Segunda grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX2 + col * (grid.boxSize + grid.spacing)
-            local y = startY + row * (grid.boxSize + grid.spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-        end
-    end
-
-    -- Terceira grade
-    for row = 0, 5 do
-        for col = 0, 4 do
-            local x = startX3 + col * (grid.boxSize + grid.spacing)
-            local y = startY + row * (grid.boxSize + grid.spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
-            love.graphics.rectangle("fill", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
-                                    4 * getScale())
-        end
-    end
+    drawGridAt(startX1, startY, 6, 5)
+    drawGridAt(startX2, startY, 6, 5)
+    drawGridAt(startX3, startY, 6, 5)
 
     -- Teclado virtual
     drawVirtualKeyboard()
 end
-
 function drawVirtualKeyboard()
     local content = getContentArea()
     local scale = getScale()
