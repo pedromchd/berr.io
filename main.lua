@@ -128,8 +128,8 @@ function centerButtons(buttons)
 end
 
 function love.load()
-    updateScreenDimensions()
     love.window.setMode(screenWidth, screenHeight)
+    updateScreenDimensions()
     love.window.setTitle("berr.io")
     backgroundImage = love.graphics.newImage("assets/fundo.jpg")
     clickSound = love.audio.newSource("assets/click_sound.mp3", "static")
@@ -549,10 +549,17 @@ function love.mousepressed(x, y, button)
     end
 end
 
+local backStates = {
+    instructions = true,
+    difficulty = true,
+    game = true,
+    game_medium = true,
+    game_hard = true
+}
+
 function love.keypressed(key)
     if key == "escape" then
-        if gameState == "instructions" or gameState == "difficulty" or gameState == "game" or
-            gameState == "game_medium" or gameState == "game_hard" then
+        if backStates[gameState] then
             gameState = "menu"
         else
             love.event.quit()
