@@ -269,7 +269,7 @@ function drawVirtualKeyboard()
     local keyWidth = 50
     local enterWidth = 130 -- largura aumentada para ENTER
     local enterExtraMargin = 30 -- margem antes do ENTER
-    local startY = 550 -- subir um pouco por causa da tela maior
+    local startY = 500 -- subir um pouco por causa da tela maior
 
     for rowIndex, row in ipairs(keyboardLayout) do
         local totalWidth = 0
