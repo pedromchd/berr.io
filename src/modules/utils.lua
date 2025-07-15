@@ -65,13 +65,13 @@ function utils.loadFonts(screenWidth, screenHeight)
     local buttonFontSize = 30
     local textFontSize = 18
 
-    local titleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+    local titleFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf",
                                             math.floor(titleFontSize * scale))
-    local difficultyTitleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+    local difficultyTitleFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf",
                                                       math.floor(difficultyTitleFontSize * scale))
-    local buttonFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+    local buttonFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf",
                                              math.floor(buttonFontSize * scale))
-    local textFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+    local textFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf",
                                            math.floor(textFontSize * scale))
 
     return titleFont, difficultyTitleFont, buttonFont, textFont

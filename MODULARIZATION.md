@@ -1,62 +1,87 @@
 # Berr.io - Modularization Summary
 
+## Current Project Structure:
+
+```
+berr.io/
+├── main.lua                    # Main game loop and LÖVE2D callbacks
+├── libraries/
+│   └── berrio.lua             # Berrio library for word validation
+├── src/
+│   ├── modules/               # Game modules
+│   │   ├── config.lua         # Configuration and constants
+│   │   ├── utils.lua          # Utility functions
+│   │   ├── ui.lua             # User Interface drawing functions
+│   │   ├── gameLogic.lua      # Game logic functions
+│   │   └── gameDraw.lua       # Game-specific drawing functions
+│   └── systems/               # Core systems
+│       ├── assetManager.lua   # Asset loading and management
+│       └── stateManager.lua   # Game state management
+└── assets/                    # Game assets (organized)
+    ├── images/
+    │   └── fundo.jpg          # Background image
+    ├── audio/
+    │   └── click_sound.mp3    # Click sound effect
+    ├── fonts/
+    │   └── PressStart2P-Regular.ttf # Game font
+    └── data/
+        ├── valid_answers.csv  # Valid answer words
+        └── valid_guesses.csv  # Valid guess words
+```
+
 ## What was done:
 
-The original monolithic `main.lua` file (1291 lines) has been separated into multiple modular files for better organization and maintainability:
+### Phase 1 - Initial Modularization:
+1. **Separated monolithic main.lua** (1291 lines → 280 lines)
+2. **Created module files** for different responsibilities
+3. **Basic folder organization**
 
-### New Module Files:
+### Phase 2 - Improved Structure:
+1. **Proper folder hierarchy**:
+   - `src/modules/` for game-specific modules
+   - `src/systems/` for core game systems
+   - `assets/` properly organized by type
 
-1. **`config.lua`** - Configuration and constants
-   - Colors definition
-   - Keyboard layout
-   - Button creation functions
-   - Game state configurations
+2. **Asset Management System**:
+   - Centralized asset loading through `assetManager.lua`
+   - Proper file organization (images, audio, fonts, data)
+   - Clean asset path management
 
-2. **`utils.lua`** - Utility functions
-   - Screen dimension calculations
-   - Responsive scaling functions
-   - Grid dimension calculations
-   - Button positioning utilities
-   - Mouse input detection
+3. **State Management System**:
+   - Simple but effective state manager
+   - Centralized state transitions
+   - Validation of state changes
+   - Easy back navigation (ESC key handling)
 
-3. **`ui.lua`** - User Interface drawing functions
-   - Menu drawing
-   - Instructions screen
-   - Difficulty selection
-   - Virtual keyboard rendering
-   - Debug information display
-   - Text wrapping utilities
+4. **Fixed UI Issues**:
+   - **Text overflow fix**: "Pressiona R ou ESC" message now wraps properly
+   - Responsive text wrapping using existing `ui.wrapText()` function
+   - Better text positioning and background sizing
 
-4. **`gameLogic.lua`** - Game logic functions
-   - Game initialization
-   - Key input processing
-   - Keyboard state management
-   - Game state updates
+### Module Responsibilities:
 
-5. **`gameDraw.lua`** - Game-specific drawing functions
-   - Easy mode game rendering
-   - Medium mode game rendering (2 grids)
-   - Hard mode game rendering (3 grids)
-
-### Updated `main.lua`:
-- Now only contains 280 lines (down from 1291)
-- Imports all modular components
-- Handles LÖVE2D callbacks (load, update, draw, input)
-- Manages global game state
-- Coordinates between modules
+1. **`main.lua`** - LÖVE2D integration and coordination
+2. **`config.lua`** - Game configuration and constants
+3. **`utils.lua`** - Utility functions and calculations
+4. **`ui.lua`** - All UI drawing and text rendering
+5. **`gameLogic.lua`** - Game rules and input processing
+6. **`gameDraw.lua`** - Game-specific rendering
+7. **`assetManager.lua`** - Asset loading and management
+8. **`stateManager.lua`** - Game state transitions
 
 ### Benefits:
-1. **Separation of Concerns**: Each module has a specific responsibility
-2. **Maintainability**: Easier to find and modify specific functionality
-3. **Reusability**: Modules can be reused or replaced independently
-4. **Readability**: Smaller files are easier to understand
-5. **Collaboration**: Multiple developers can work on different modules
+1. **Clean Separation**: Each file has a clear purpose
+2. **Maintainable**: Easy to find and modify functionality
+3. **Organized Assets**: Proper file structure
+4. **Responsive Text**: No more overflow issues
+5. **Simple State Management**: Easy to add new states
+6. **Asset Management**: Centralized loading and caching
 
-### Next Steps for Full Modularization:
-1. Move asset loading to a separate module
-2. Create a proper game state manager
-3. Abstract the LÖVE2D dependencies for better testing
-4. Add proper error handling and validation
-5. Create a build/packaging system
+### Keeping it Simple:
+- No over-engineering for a simple game
+- Direct function calls instead of complex patterns
+- Minimal dependencies between modules
+- Easy to understand structure
+- No unnecessary abstractions
 
-The current modularization maintains full compatibility with the original functionality while providing a much cleaner and more maintainable codebase structure.
+The game maintains full compatibility while being much more organized and maintainable!

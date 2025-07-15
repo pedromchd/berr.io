@@ -1,13 +1,14 @@
 -- Menu berr.io com tela de instruções - Modularized version
 local Berrio = require("libraries.berrio")
-local config = require("config")
-local utils = require("utils")
-local ui = require("ui")
-local gameLogic = require("gameLogic")
-local gameDraw = require("gameDraw")
+local config = require("src.modules.config")
+local utils = require("src.modules.utils")
+local ui = require("src.modules.ui")
+local gameLogic = require("src.modules.gameLogic")
+local gameDraw = require("src.modules.gameDraw")
+local assetManager = require("src.systems.assetManager")
+local stateManager = require("src.systems.stateManager")
 
 -- Estados da tela
-local gameState = "menu" -- "menu", "instructions", "difficulty", "game"
 local bounceTime = 0
 
 -- Instâncias do jogo
@@ -88,16 +89,16 @@ end
 
 -- Função para atualizar estado do teclado
 local function updateKeyboardStateMultiGrid()
-    gameLogic.updateKeyboardStateMultiGrid(gameState, gameInstances, keyboardState)
+    gameLogic.updateKeyboardStateMultiGrid(stateManager.getState(), gameInstances, keyboardState)
 end
 
 -- Função para processar entrada de tecla
 local function processKeyInput(key)
     currentInput, currentRow, currentCol = gameLogic.processKeyInput(key, currentInput, currentRow,
                                                                      currentCol, showingMessage,
-                                                                     gameState, gameInstances,
-                                                                     keyboardState, debugInfo,
-                                                                     showMessage,
+                                                                     stateManager.getState(),
+                                                                     gameInstances, keyboardState,
+                                                                     debugInfo, showMessage,
                                                                      updateKeyboardStateMultiGrid)
 end
 
@@ -106,14 +107,17 @@ function love.load()
     love.window.setMode(screenWidth, screenHeight)
     updateScreenDimensions()
     love.window.setTitle("berr.io")
-    backgroundImage = love.graphics.newImage("assets/fundo.jpg")
-    clickSound = love.audio.newSource("assets/click_sound.mp3", "static")
+
+    -- Load all assets using asset manager
+    assetManager.loadAll()
+    backgroundImage = assetManager.getImage("background")
+    clickSound = assetManager.getSound("click")
 
     -- Carregar fontes com escala
     loadFonts()
 
     -- Criar botões dinamicamente
-    local function changeState(newState) gameState = newState end
+    local function changeState(newState) stateManager.setState(newState) end
 
     menuButtons = config.createMenuButtons()
     difficultyButtons = config.createDifficultyButtons(initGame)
@@ -150,12 +154,12 @@ function love.update(dt)
         if messageTime <= 0 then showingMessage = false end
     end
 
-    if gameState == "menu" then
+    if stateManager.getState() == "menu" then
         for _, button in ipairs(menuButtons) do
             button.isHovered = utils.isPointInRect(mouseX, mouseY, button.x, button.y, button.width,
                                                    button.height)
         end
-    elseif gameState == "difficulty" then
+    elseif stateManager.getState() == "difficulty" then
         for _, button in ipairs(difficultyButtons) do
             button.isHovered = utils.isPointInRect(mouseX, mouseY, button.x, button.y, button.width,
                                                    button.height)
@@ -177,29 +181,29 @@ function love.draw()
     love.graphics.push()
     love.graphics.translate(content.x, content.y)
 
-    if gameState == "menu" then
+    if stateManager.getState() == "menu" then
         ui.drawMenu(colors, titleFont, buttonFont, textFont, content, bounceTime, menuButtons,
                     getScale)
-    elseif gameState == "instructions" then
+    elseif stateManager.getState() == "instructions" then
         ui.drawInstructions(colors, titleFont, textFont, content, getScale)
-    elseif gameState == "difficulty" then
+    elseif stateManager.getState() == "difficulty" then
         ui.drawDifficulty(colors, difficultyTitleFont, buttonFont, content, difficultyButtons,
                           getScale)
-    elseif gameState == "game" then
+    elseif stateManager.getState() == "game" then
         gameDraw.drawGameEasy(colors, difficultyTitleFont, buttonFont, content, gameInstances, ui,
                               utils, screenWidth, screenHeight, currentInput, currentRow,
                               keyboardLayout, keyboardState, showingMessage, messageText,
-                              messageColor, gameState)
-    elseif gameState == "game_medium" then
+                              messageColor, stateManager.getState())
+    elseif stateManager.getState() == "game_medium" then
         gameDraw.drawGameMid(colors, difficultyTitleFont, buttonFont, content, gameInstances, ui,
                              utils, screenWidth, screenHeight, currentInput, currentRow,
                              keyboardLayout, keyboardState, showingMessage, messageText,
-                             messageColor, gameState)
-    elseif gameState == "game_hard" then
+                             messageColor, stateManager.getState())
+    elseif stateManager.getState() == "game_hard" then
         gameDraw.drawGameHard(colors, difficultyTitleFont, buttonFont, content, gameInstances, ui,
                               utils, screenWidth, screenHeight, currentInput, currentRow,
                               keyboardLayout, keyboardState, showingMessage, messageText,
-                              messageColor, gameState)
+                              messageColor, stateManager.getState())
     end
 
     love.graphics.pop()
@@ -210,7 +214,7 @@ end
 
 function love.mousepressed(x, y, button)
     if button == 1 then
-        if gameState == "menu" then
+        if stateManager.getState() == "menu" then
             for _, btn in ipairs(menuButtons) do
                 if utils.isPointInRect(x, y, btn.x, btn.y, btn.width, btn.height) then
                     love.audio.play(clickSound)
@@ -218,7 +222,7 @@ function love.mousepressed(x, y, button)
                     break
                 end
             end
-        elseif gameState == "difficulty" then
+        elseif stateManager.getState() == "difficulty" then
             for _, btn in ipairs(difficultyButtons) do
                 if utils.isPointInRect(x, y, btn.x, btn.y, btn.width, btn.height) then
                     love.audio.play(clickSound)
@@ -226,10 +230,10 @@ function love.mousepressed(x, y, button)
                     break
                 end
             end
-        elseif gameState == "game" or gameState == "game_medium" or gameState == "game_hard" then
+        elseif stateManager.isGameState() then
             -- Verificar cliques no teclado virtual
-            local keyPressed = utils.getVirtualKeyPressed(x, y, gameState, keyboardLayout,
-                                                          screenWidth, screenHeight)
+            local keyPressed = utils.getVirtualKeyPressed(x, y, stateManager.getState(),
+                                                          keyboardLayout, screenWidth, screenHeight)
             if keyPressed then
                 love.audio.play(clickSound)
                 processKeyInput(keyPressed)
@@ -240,24 +244,26 @@ end
 
 function love.keypressed(key)
     if key == "escape" then
-        if backStates[gameState] then
-            gameState = "menu"
+        local backState = stateManager.getBackState()
+        if backState then
+            stateManager.setState(backState)
         else
             love.event.quit()
         end
     elseif key == "f1" then
         -- Toggle debug mode
         showDebug = not showDebug
-    elseif gameState == "game" or gameState == "game_medium" or gameState == "game_hard" then
+    elseif stateManager.isGameState() then
         -- Verificar se TODAS as grids acabaram para permitir restart
         local gameEnded = false
-        if gameState == "game" then
+        local currentState = stateManager.getState()
+        if currentState == "game" then
             -- Check if easy game is done
             gameEnded = gameInstances.easy and gameInstances.easy.gameOver
-        elseif gameState == "game_medium" then
+        elseif currentState == "game_medium" then
             gameEnded = (gameInstances.medium[1] and gameInstances.medium[1].gameOver) and
                             (gameInstances.medium[2] and gameInstances.medium[2].gameOver)
-        elseif gameState == "game_hard" then
+        elseif currentState == "game_hard" then
             gameEnded = (gameInstances.hard[1] and gameInstances.hard[1].gameOver) and
                             (gameInstances.hard[2] and gameInstances.hard[2].gameOver) and
                             (gameInstances.hard[3] and gameInstances.hard[3].gameOver)
@@ -265,11 +271,11 @@ function love.keypressed(key)
 
         if key == "r" and gameEnded then
             -- Reiniciar o jogo
-            if gameState == "game" then
+            if currentState == "game" then
                 initGame("easy")
-            elseif gameState == "game_medium" then
+            elseif currentState == "game_medium" then
                 initGame("medium")
-            elseif gameState == "game_hard" then
+            elseif currentState == "game_hard" then
                 initGame("hard")
             end
         else

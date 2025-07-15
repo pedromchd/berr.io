@@ -272,18 +272,34 @@ function ui.drawMessage(showingMessage, messageText, messageColor, gameState, ga
             love.graphics.setFont(textFont)
 
             local restartText = "Pressione R para jogar novamente ou ESC para voltar ao menu"
-            local textWidth = textFont:getWidth(restartText)
+            local maxWidth = content.width * 0.8 -- Use 80% of content width
+            local wrappedLines = ui.wrapText(restartText, textFont, maxWidth)
+
             local textHeight = textFont:getHeight()
-            local x = (content.width - textWidth) / 2
-            local y = content.height * 0.90
+            local totalHeight = #wrappedLines * textHeight + (#wrappedLines - 1) * 5 -- 5px line spacing
+            local y = content.height * 0.88 - totalHeight / 2
+
+            -- Calculate background dimensions
+            local maxLineWidth = 0
+            for _, line in ipairs(wrappedLines) do
+                local lineWidth = textFont:getWidth(line)
+                if lineWidth > maxLineWidth then maxLineWidth = lineWidth end
+            end
+
+            local x = (content.width - maxLineWidth) / 2
 
             -- Fundo da mensagem de restart
             love.graphics.setColor(0, 0, 0, 0.8)
-            love.graphics.rectangle("fill", x - 25, y - 15, textWidth + 50, textHeight + 30, 10)
+            love.graphics.rectangle("fill", x - 25, y - 15, maxLineWidth + 50, totalHeight + 30, 10)
 
-            -- Texto da mensagem de restart
+            -- Texto da mensagem de restart (multi-line)
             love.graphics.setColor(colors.text)
-            love.graphics.print(restartText, x, y)
+            local currentY = y
+            for _, line in ipairs(wrappedLines) do
+                local lineX = (content.width - textFont:getWidth(line)) / 2
+                love.graphics.print(line, lineX, currentY)
+                currentY = currentY + textHeight + 5
+            end
         end
         return
     end
