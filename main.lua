@@ -694,13 +694,19 @@ function drawMessage()
         if currentGame and currentGame.gameOver then
             local content = getContentArea()
             love.graphics.setFont(textFont)
-            love.graphics.setColor(colors.text)
 
             local restartText = "Pressione R para jogar novamente ou ESC para voltar ao menu"
             local textWidth = textFont:getWidth(restartText)
+            local textHeight = textFont:getHeight()
             local x = (content.width - textWidth) / 2
             local y = content.height * 0.90
 
+            -- Fundo da mensagem de restart
+            love.graphics.setColor(0, 0, 0, 0.8)
+            love.graphics.rectangle("fill", x - 25, y - 15, textWidth + 50, textHeight + 30, 10)
+
+            -- Texto da mensagem de restart
+            love.graphics.setColor(colors.text)
             love.graphics.print(restartText, x, y)
         end
         return
@@ -708,16 +714,15 @@ function drawMessage()
 
     local content = getContentArea()
     love.graphics.setFont(buttonFont)
-    love.graphics.setColor(colors[messageColor] or colors.text)
 
     local textWidth = buttonFont:getWidth(messageText)
     local textHeight = buttonFont:getHeight()
     local x = (content.width - textWidth) / 2
     local y = content.height * 0.85
 
-    -- Fundo da mensagem
+    -- Fundo da mensagem com padding maior para garantir visibilidade
     love.graphics.setColor(0, 0, 0, 0.8)
-    love.graphics.rectangle("fill", x - 20, y - 10, textWidth + 40, textHeight + 20, 10)
+    love.graphics.rectangle("fill", x - 25, y - 15, textWidth + 50, textHeight + 30, 10)
 
     -- Texto da mensagem
     love.graphics.setColor(colors[messageColor] or colors.text)
