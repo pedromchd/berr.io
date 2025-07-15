@@ -412,8 +412,15 @@ function processKeyInput(key)
                             showMessage("Você acertou " .. wonCount .. " de " .. #results ..
                                             " grids!", "yellow", 3)
                         else
-                            showMessage("Fim de jogo! Uma das palavras era: " ..
-                                            allAnswers[1]:upper(), "red", 5)
+                            -- Mostrar todas as palavras corretas
+                            local allAnswersText = ""
+                            for i, answer in ipairs(allAnswers) do
+                                if i > 1 then
+                                    allAnswersText = allAnswersText .. ", "
+                                end
+                                allAnswersText = allAnswersText .. answer:upper()
+                            end
+                            showMessage("Perdeu! Palavras: " .. allAnswersText, "red", 5)
                         end
                     end
                 elseif allWon then
