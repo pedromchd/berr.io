@@ -235,23 +235,55 @@ function gameLogic.updateKeyboardStateMultiGrid(gameState, gameInstances, keyboa
         grids = gameInstances.hard
     end
 
-    -- Processar todas as grids
-    for _, gameInstance in ipairs(grids) do
-        if gameInstance then
-            local gameState = gameInstance:getGameState()
+    -- Para modos com múltiplas grids, criar estado dividido por grid
+    if #grids > 1 then
+        -- Criar estado separado para cada grid
+        for gridIndex, gameInstance in ipairs(grids) do
+            if gameInstance then
+                local gameStateData = gameInstance:getGameState()
 
-            for _, attempt in ipairs(gameState.attempts) do
-                for i = 1, #attempt.word do
-                    local letter = attempt.word:sub(i, i):upper()
-                    local result = attempt.result.letters[i]
+                for _, attempt in ipairs(gameStateData.attempts) do
+                    for i = 1, #attempt.word do
+                        local letter = attempt.word:sub(i, i):upper()
+                        local result = attempt.result.letters[i]
 
-                    if result == true then
-                        keyboardState[letter] = "correct"
-                    elseif result == false and keyboardState[letter] ~= "correct" then
-                        keyboardState[letter] = "wrong_position"
-                    elseif result == nil and keyboardState[letter] ~= "correct" and
-                        keyboardState[letter] ~= "wrong_position" then
-                        keyboardState[letter] = "not_in_word"
+                        -- Inicializar array se não existir
+                        if not keyboardState[letter] then
+                            keyboardState[letter] = {}
+                        end
+
+                        -- Armazenar resultado para esta grid específica
+                        if result == true then
+                            keyboardState[letter][gridIndex] = "correct"
+                        elseif result == false and keyboardState[letter][gridIndex] ~= "correct" then
+                            keyboardState[letter][gridIndex] = "wrong_position"
+                        elseif result == nil and keyboardState[letter][gridIndex] ~= "correct" and
+                            keyboardState[letter][gridIndex] ~= "wrong_position" then
+                            keyboardState[letter][gridIndex] = "not_in_word"
+                        end
+                    end
+                end
+            end
+        end
+    else
+        -- Modo fácil (uma grid) - comportamento original
+        for _, gameInstance in ipairs(grids) do
+            if gameInstance then
+                local gameStateData = gameInstance:getGameState()
+
+                for _, attempt in ipairs(gameStateData.attempts) do
+                    for i = 1, #attempt.word do
+                        local letter = attempt.word:sub(i, i):upper()
+                        local result = attempt.result.letters[i]
+
+                        if result == true then
+                            keyboardState[letter] = "correct"
+                        elseif result == false and keyboardState[letter] ~= "correct" then
+                            keyboardState[letter] = "wrong_position"
+                        elseif result == nil and keyboardState[letter] ~= "correct" and
+                            keyboardState[letter] ~= "wrong_position" then
+                            keyboardState[letter] = "not_in_word"
+                        end
                     end
                 end
             end

@@ -64,9 +64,9 @@ function gameDraw.drawGameMid(colors, difficultyTitleFont, buttonFont, content, 
                   function() return utils.getScale(screenWidth, screenHeight) end, currentInput,
                   currentRow)
 
-    -- Teclado virtual abaixo das grades
-    ui.drawVirtualKeyboard(keyboardLayout, keyboardState, colors, buttonFont, content,
-                           function() return utils.getScale(screenWidth, screenHeight) end)
+    -- Teclado virtual dividido para o modo médio
+    ui.drawVirtualKeyboardMedium(keyboardLayout, keyboardState, colors, buttonFont, content,
+                                 function() return utils.getScale(screenWidth, screenHeight) end)
 
     -- Mensagem
     ui.drawMessage(showingMessage, messageText, messageColor, gameState, gameInstances, colors,

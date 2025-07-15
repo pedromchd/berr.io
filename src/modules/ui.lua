@@ -97,11 +97,14 @@ function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
         }, {
             text = "- Se a letra for AMARELA, ela está presente na palavra, mas na posição errada.",
             color = "yellow"
-        }, {text = "- Se a letra for VERMELHA, ela NÃO está na palavra.", color = "red"}
+        }, {text = "- Se a letra for VERMELHA, ela NÃO está na palavra.", color = "red"}, {
+            text = "• Nos modos Médio e Difícil, você joga múltiplas palavras simultâneamente. O teclado mostra as cores divididas para cada palavra.",
+            color = "text"
+        }
     }
 
-    local lineHeight = textFont:getHeight() * 1.4
-    local startY = content.height * 0.22
+    local lineHeight = textFont:getHeight() * 1.6 -- Aumentado de 1.4 para 1.6
+    local startY = content.height * 0.18 -- Movido mais para cima
     local maxTextWidth = content.width - padding * 2
     local currentY = startY
 
@@ -118,18 +121,18 @@ function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
         end
 
         -- Adicionar espaço extra após certas instruções
-        if i == 1 or i == 2 or i == 3 then currentY = currentY + lineHeight * 1.5 end
+        if i == 1 or i == 2 or i == 3 or i == 7 then currentY = currentY + lineHeight * 0.8 end
     end
 
-    -- Seção de exemplos mais abaixo
-    local examplesY = content.height * 0.72
+    -- Seção de exemplos logo após o texto (posição dinâmica)
+    local examplesY = currentY + lineHeight * 1.5 -- Reduzido de 2 para 1.5
     love.graphics.setColor(colors.text)
     local examplesTitle = "Exemplos:"
     local examplesTitleWidth = textFont:getWidth(examplesTitle)
     love.graphics.print(examplesTitle, (content.width - examplesTitleWidth) / 2, examplesY)
 
-    local squareSize = 20 * getScale()
-    local exampleStartY = examplesY + lineHeight * 1.5
+    local squareSize = 16 * getScale() -- Reduzido de 20 para 16
+    local exampleStartY = examplesY + lineHeight * 1.2 -- Reduzido de 1.5 para 1.2
     local exampleCenterX = content.width / 2
 
     -- Exemplo Verde
@@ -142,18 +145,18 @@ function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
     -- Exemplo Amarelo
     love.graphics.setColor(colors.yellow)
     love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(),
-                            exampleStartY + squareSize * 1.8, squareSize, squareSize)
+                            exampleStartY + squareSize * 1.5, squareSize, squareSize) -- Reduzido de 1.8 para 1.5
     love.graphics.setColor(colors.text)
     love.graphics.print("Posição errada", exampleCenterX - 120 * getScale(),
-                        exampleStartY + squareSize * 1.8 + 2)
+                        exampleStartY + squareSize * 1.5 + 2) -- Reduzido de 1.8 para 1.5
 
     -- Exemplo Vermelho
     love.graphics.setColor(colors.red)
     love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(),
-                            exampleStartY + squareSize * 3.6, squareSize, squareSize)
+                            exampleStartY + squareSize * 3.0, squareSize, squareSize) -- Reduzido de 3.6 para 3.0
     love.graphics.setColor(colors.text)
     love.graphics.print("Não está na palavra", exampleCenterX - 120 * getScale(),
-                        exampleStartY + squareSize * 3.6 + 2)
+                        exampleStartY + squareSize * 3.0 + 2) -- Reduzido de 3.6 para 3.0
 
     -- Instrução para voltar
     love.graphics.setColor(colors.text)
@@ -352,7 +355,7 @@ function ui.drawVirtualKeyboard(keyboardLayout, keyboardState, colors, buttonFon
             local y = startY + (rowIndex - 1) * (keyHeight + spacing)
 
             -- Determinar cor baseada no estado da tecla
-            local keyColor = {0.15, 0.15, 0.15}
+            local keyColor = {0.25, 0.25, 0.25} -- Cor mais clara para melhor contraste
             if key ~= "←" and key ~= "ENTER" then
                 local keyState = keyboardState[key]
                 if keyState == "correct" then
@@ -376,6 +379,98 @@ function ui.drawVirtualKeyboard(keyboardLayout, keyboardState, colors, buttonFon
             local textHeight = buttonFont:getHeight()
             love.graphics.print(text, x + (thisKeyWidth - textWidth) / 2,
                                 y + (keyHeight - textHeight) / 2)
+
+            x = x + thisKeyWidth + spacing
+        end
+    end
+end
+
+-- Teclado dividido para o modo médio (2 grids)
+function ui.drawVirtualKeyboardMedium(keyboardLayout, keyboardState, colors, buttonFont, content,
+                                      getScale)
+    local scale = getScale()
+    local keyHeight = math.floor(70 * scale)
+    local keyWidth = math.floor(60 * scale)
+    local enterWidth = math.floor(150 * scale)
+    local spacing = math.floor(12 * scale)
+    local enterExtraMargin = math.floor(30 * scale)
+    local startY = content.height * 0.70
+
+    for rowIndex, row in ipairs(keyboardLayout) do
+        local totalWidth = 0
+        for _, key in ipairs(row) do
+            if key == "ENTER" then
+                totalWidth = totalWidth + enterWidth + enterExtraMargin
+            else
+                totalWidth = totalWidth + keyWidth
+            end
+            totalWidth = totalWidth + spacing
+        end
+        totalWidth = totalWidth - spacing
+
+        local startX = (content.width - totalWidth) / 2
+        local x = startX
+
+        for _, key in ipairs(row) do
+            local thisKeyWidth = (key == "ENTER") and enterWidth or keyWidth
+            local margin = (key == "ENTER") and enterExtraMargin or 0
+
+            x = x + margin
+            local y = startY + (rowIndex - 1) * (keyHeight + spacing)
+
+            if key ~= "←" and key ~= "ENTER" then
+                local keyStates = keyboardState[key] or {}
+
+                -- Dividir tecla em 2 partes (para 2 grids)
+                local halfWidth = thisKeyWidth / 2
+
+                for gridIndex = 1, 2 do
+                    local keyColor = {0.25, 0.25, 0.25} -- Cor mais clara para melhor contraste
+                    local keyState = keyStates[gridIndex]
+
+                    if keyState == "correct" then
+                        keyColor = colors.green
+                    elseif keyState == "wrong_position" then
+                        keyColor = colors.yellow
+                    elseif keyState == "not_in_word" then
+                        keyColor = colors.red
+                    end
+
+                    local segmentX = x + (gridIndex - 1) * halfWidth
+
+                    love.graphics.setColor(keyColor)
+                    love.graphics.rectangle("fill", segmentX, y, halfWidth, keyHeight, 3 * scale,
+                                            3 * scale)
+                end
+
+                -- Borda única para toda a tecla
+                love.graphics.setColor(colors.border)
+                love.graphics.rectangle("line", x, y, thisKeyWidth, keyHeight, 3 * scale, 3 * scale)
+
+                -- Texto centralizado na tecla completa
+                love.graphics.setColor(colors.buttonText)
+                local text = key
+                local textWidth = buttonFont:getWidth(text)
+                local textHeight = buttonFont:getHeight()
+                love.graphics.print(text, x + (thisKeyWidth - textWidth) / 2,
+                                    y + (keyHeight - textHeight) / 2)
+            else
+                -- Teclas especiais (ENTER e ←) - cor única
+                local keyColor = {0.25, 0.25, 0.25}
+
+                love.graphics.setColor(keyColor)
+                love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
+
+                love.graphics.setColor(colors.border)
+                love.graphics.rectangle("line", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
+
+                love.graphics.setColor(colors.buttonText)
+                local text = (key == "←") and "<" or key
+                local textWidth = buttonFont:getWidth(text)
+                local textHeight = buttonFont:getHeight()
+                love.graphics.print(text, x + (thisKeyWidth - textWidth) / 2,
+                                    y + (keyHeight - textHeight) / 2)
+            end
 
             x = x + thisKeyWidth + spacing
         end
@@ -414,31 +509,59 @@ function ui.drawVirtualKeyboardHard(keyboardLayout, keyboardState, colors, butto
             x = x + margin
             local y = startY + (rowIndex - 1) * (keyHeight + spacing)
 
-            -- Determinar cor baseada no estado da tecla
-            local keyColor = {0.15, 0.15, 0.15}
             if key ~= "←" and key ~= "ENTER" then
-                local keyState = keyboardState[key]
-                if keyState == "correct" then
-                    keyColor = colors.green
-                elseif keyState == "wrong_position" then
-                    keyColor = colors.yellow
-                elseif keyState == "not_in_word" then
-                    keyColor = colors.red
+                local keyStates = keyboardState[key] or {}
+
+                -- Dividir tecla em 3 partes (para 3 grids)
+                local thirdWidth = thisKeyWidth / 3
+
+                for gridIndex = 1, 3 do
+                    local keyColor = {0.25, 0.25, 0.25} -- Cor mais clara para melhor contraste
+                    local keyState = keyStates[gridIndex]
+
+                    if keyState == "correct" then
+                        keyColor = colors.green
+                    elseif keyState == "wrong_position" then
+                        keyColor = colors.yellow
+                    elseif keyState == "not_in_word" then
+                        keyColor = colors.red
+                    end
+
+                    local segmentX = x + (gridIndex - 1) * thirdWidth
+
+                    love.graphics.setColor(keyColor)
+                    love.graphics.rectangle("fill", segmentX, y, thirdWidth, keyHeight, 2 * scale,
+                                            2 * scale)
                 end
+
+                -- Borda única para toda a tecla
+                love.graphics.setColor(colors.border)
+                love.graphics.rectangle("line", x, y, thisKeyWidth, keyHeight, 2 * scale, 2 * scale)
+
+                -- Texto centralizado na tecla completa
+                love.graphics.setColor(colors.buttonText)
+                local text = key
+                local textWidth = buttonFont:getWidth(text)
+                local textHeight = buttonFont:getHeight()
+                love.graphics.print(text, x + (thisKeyWidth - textWidth) / 2,
+                                    y + (keyHeight - textHeight) / 2)
+            else
+                -- Teclas especiais (ENTER e ←) - cor única
+                local keyColor = {0.25, 0.25, 0.25}
+
+                love.graphics.setColor(keyColor)
+                love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
+
+                love.graphics.setColor(colors.border)
+                love.graphics.rectangle("line", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
+
+                love.graphics.setColor(colors.buttonText)
+                local text = (key == "←") and "<" or key
+                local textWidth = buttonFont:getWidth(text)
+                local textHeight = buttonFont:getHeight()
+                love.graphics.print(text, x + (thisKeyWidth - textWidth) / 2,
+                                    y + (keyHeight - textHeight) / 2)
             end
-
-            love.graphics.setColor(keyColor)
-            love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
-
-            love.graphics.setColor(colors.border)
-            love.graphics.rectangle("line", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
-
-            love.graphics.setColor(colors.buttonText)
-            local text = (key == "←") and "<" or key
-            local textWidth = buttonFont:getWidth(text)
-            local textHeight = buttonFont:getHeight()
-            love.graphics.print(text, x + (thisKeyWidth - textWidth) / 2,
-                                y + (keyHeight - textHeight) / 2)
 
             x = x + thisKeyWidth + spacing
         end
