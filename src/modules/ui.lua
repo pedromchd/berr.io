@@ -81,7 +81,7 @@ function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
     love.graphics.setFont(titleFont)
     local titleText = "Como Jogar"
     local titleWidth = titleFont:getWidth(titleText)
-    love.graphics.print(titleText, (content.width - titleWidth) / 2, content.height * 0.08)
+    love.graphics.print(titleText, (content.width - titleWidth) / 2, content.height * 0.06)
 
     love.graphics.setFont(textFont)
     local instructions = {
@@ -103,8 +103,8 @@ function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
         }
     }
 
-    local lineHeight = textFont:getHeight() * 1.6 -- Aumentado de 1.4 para 1.6
-    local startY = content.height * 0.18 -- Movido mais para cima
+    local lineHeight = textFont:getHeight() * 1.6 -- Ajustado para equilibrar espaço e legibilidade
+    local startY = content.height * 0.18 -- Movido mais para baixo para dar espaço ao título
     local maxTextWidth = content.width - padding * 2
     local currentY = startY
 
@@ -121,18 +121,18 @@ function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
         end
 
         -- Adicionar espaço extra após certas instruções
-        if i == 1 or i == 2 or i == 3 or i == 7 then currentY = currentY + lineHeight * 0.8 end
+        if i == 1 or i == 2 or i == 3 or i == 7 then currentY = currentY + lineHeight * 0.6 end
     end
 
     -- Seção de exemplos logo após o texto (posição dinâmica)
-    local examplesY = currentY + lineHeight * 1.5 -- Reduzido de 2 para 1.5
+    local examplesY = currentY + lineHeight * 1.2 -- Reduzido para economizar espaço
     love.graphics.setColor(colors.text)
     local examplesTitle = "Exemplos:"
     local examplesTitleWidth = textFont:getWidth(examplesTitle)
     love.graphics.print(examplesTitle, (content.width - examplesTitleWidth) / 2, examplesY)
 
-    local squareSize = 16 * getScale() -- Reduzido de 20 para 16
-    local exampleStartY = examplesY + lineHeight * 1.2 -- Reduzido de 1.5 para 1.2
+    local squareSize = 14 * getScale() -- Reduzido ainda mais para economizar espaço
+    local exampleStartY = examplesY + lineHeight * 1.0 -- Reduzido para economizar espaço
     local exampleCenterX = content.width / 2
 
     -- Exemplo Verde
@@ -145,24 +145,24 @@ function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
     -- Exemplo Amarelo
     love.graphics.setColor(colors.yellow)
     love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(),
-                            exampleStartY + squareSize * 1.5, squareSize, squareSize) -- Reduzido de 1.8 para 1.5
+                            exampleStartY + squareSize * 1.3, squareSize, squareSize) -- Mais compacto
     love.graphics.setColor(colors.text)
     love.graphics.print("Posição errada", exampleCenterX - 120 * getScale(),
-                        exampleStartY + squareSize * 1.5 + 2) -- Reduzido de 1.8 para 1.5
+                        exampleStartY + squareSize * 1.3 + 2) -- Mais compacto
 
     -- Exemplo Vermelho
     love.graphics.setColor(colors.red)
     love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(),
-                            exampleStartY + squareSize * 3.0, squareSize, squareSize) -- Reduzido de 3.6 para 3.0
+                            exampleStartY + squareSize * 2.6, squareSize, squareSize) -- Mais compacto
     love.graphics.setColor(colors.text)
     love.graphics.print("Não está na palavra", exampleCenterX - 120 * getScale(),
-                        exampleStartY + squareSize * 3.0 + 2) -- Reduzido de 3.6 para 3.0
+                        exampleStartY + squareSize * 2.6 + 2) -- Mais compacto
 
     -- Instrução para voltar
     love.graphics.setColor(colors.text)
     local backText = "Pressione ESC para voltar"
     local backTextWidth = textFont:getWidth(backText)
-    love.graphics.print(backText, (content.width - backTextWidth) / 2, content.height * 0.94)
+    love.graphics.print(backText, (content.width - backTextWidth) / 2, content.height * 0.92)
 end
 
 function ui.drawDifficulty(colors, difficultyTitleFont, buttonFont, content, difficultyButtons,
