@@ -43,7 +43,7 @@ function Berrio:loadCSVToSet(filename)
     if not file then error("Não foi possível abrir o arquivo: " .. filename) end
 
     -- Pula cabeçalho
-    file:read("*line")
+    local _ = file:read("*line")
 
     -- Lê palavras
     for line in file:lines() do

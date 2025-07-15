@@ -18,6 +18,9 @@ local messageText = ""
 local messageTime = 0
 local messageColor = "text"
 
+-- Estado das teclas do teclado
+local keyboardState = {}
+
 -- Configurações da tela
 local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
 
@@ -99,6 +102,36 @@ local backStates = {
     game_medium = true,
     game_hard = true
 }
+
+-- Estado das teclas do teclado
+local keyboardState = {}
+
+-- Função para atualizar estado do teclado
+function updateKeyboardState()
+    -- Resetar estado
+    keyboardState = {}
+
+    local currentGame = getCurrentGameInstance()
+    if not currentGame then return end
+
+    local gameState = currentGame:getGameState()
+
+    for _, attempt in ipairs(gameState.attempts) do
+        for i = 1, #attempt.word do
+            local letter = attempt.word:sub(i, i):upper()
+            local result = attempt.result.letters[i]
+
+            if result == true then
+                keyboardState[letter] = "correct"
+            elseif result == false and keyboardState[letter] ~= "correct" then
+                keyboardState[letter] = "wrong_position"
+            elseif result == nil and keyboardState[letter] ~= "correct" and keyboardState[letter] ~=
+                "wrong_position" then
+                keyboardState[letter] = "not_in_word"
+            end
+        end
+    end
+end
 
 -- Função para atualizar dimensões da tela
 function updateScreenDimensions()
@@ -272,6 +305,9 @@ function processKeyInput(key)
                 currentInput = ""
                 currentCol = 1
 
+                -- Atualizar estado do teclado
+                updateKeyboardState()
+
                 if result.gameOver then
                     if result.won then
                         showMessage("Parabéns! Você acertou!", "green", 3)
@@ -298,6 +334,33 @@ function showMessage(text, color, duration)
     messageColor = color
     messageTime = duration
     showingMessage = true
+end
+
+-- Função para atualizar estado do teclado
+function updateKeyboardState()
+    -- Resetar estado
+    keyboardState = {}
+
+    local currentGame = getCurrentGameInstance()
+    if not currentGame then return end
+
+    local gameState = currentGame:getGameState()
+
+    for _, attempt in ipairs(gameState.attempts) do
+        for i = 1, #attempt.word do
+            local letter = attempt.word:sub(i, i):upper()
+            local result = attempt.result.letters[i]
+
+            if result == true then
+                keyboardState[letter] = "correct"
+            elseif result == false and keyboardState[letter] ~= "correct" then
+                keyboardState[letter] = "wrong_position"
+            elseif result == nil and keyboardState[letter] ~= "correct" and keyboardState[letter] ~=
+                "wrong_position" then
+                keyboardState[letter] = "not_in_word"
+            end
+        end
+    end
 end
 
 function love.update(dt)
@@ -610,7 +673,23 @@ end
 
 -- Função para desenhar mensagem
 function drawMessage()
-    if not showingMessage then return end
+    if not showingMessage then
+        -- Mostrar instrução de reiniciar se o jogo acabou
+        local currentGame = getCurrentGameInstance()
+        if currentGame and currentGame.gameOver then
+            local content = getContentArea()
+            love.graphics.setFont(textFont)
+            love.graphics.setColor(colors.text)
+
+            local restartText = "Pressione R para jogar novamente ou ESC para voltar ao menu"
+            local textWidth = textFont:getWidth(restartText)
+            local x = (content.width - textWidth) / 2
+            local y = content.height * 0.90
+
+            love.graphics.print(restartText, x, y)
+        end
+        return
+    end
 
     local content = getContentArea()
     love.graphics.setFont(buttonFont)
@@ -758,7 +837,20 @@ function drawVirtualKeyboard()
             x = x + margin
             local y = startY + (rowIndex - 1) * (keyHeight + spacing)
 
-            love.graphics.setColor(0.15, 0.15, 0.15)
+            -- Determinar cor baseada no estado da tecla
+            local keyColor = {0.15, 0.15, 0.15}
+            if key ~= "←" and key ~= "ENTER" then
+                local keyState = keyboardState[key]
+                if keyState == "correct" then
+                    keyColor = colors.green
+                elseif keyState == "wrong_position" then
+                    keyColor = colors.yellow
+                elseif keyState == "not_in_word" then
+                    keyColor = colors.red
+                end
+            end
+
+            love.graphics.setColor(keyColor)
             love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
 
             love.graphics.setColor(colors.border)
@@ -808,7 +900,20 @@ function drawVirtualKeyboardHard()
             x = x + margin
             local y = startY + (rowIndex - 1) * (keyHeight + spacing)
 
-            love.graphics.setColor(0.15, 0.15, 0.15)
+            -- Determinar cor baseada no estado da tecla
+            local keyColor = {0.15, 0.15, 0.15}
+            if key ~= "←" and key ~= "ENTER" then
+                local keyState = keyboardState[key]
+                if keyState == "correct" then
+                    keyColor = colors.green
+                elseif keyState == "wrong_position" then
+                    keyColor = colors.yellow
+                elseif keyState == "not_in_word" then
+                    keyColor = colors.red
+                end
+            end
+
+            love.graphics.setColor(keyColor)
             love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
 
             love.graphics.setColor(colors.border)
@@ -924,7 +1029,18 @@ function love.keypressed(key)
             love.event.quit()
         end
     elseif gameState == "game" or gameState == "game_medium" or gameState == "game_hard" then
-        processKeyInput(key)
+        if key == "r" and (getCurrentGameInstance() and getCurrentGameInstance().gameOver) then
+            -- Reiniciar o jogo
+            if gameState == "game" then
+                initGame("easy")
+            elseif gameState == "game_medium" then
+                initGame("medium")
+            elseif gameState == "game_hard" then
+                initGame("hard")
+            end
+        else
+            processKeyInput(key)
+        end
     end
 end
 
