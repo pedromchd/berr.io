@@ -1,5 +1,5 @@
 -- Menu berr.io com tela de instruções - Modularized version
-local Berrio = require("libraries.berrio")
+local Berrio = require("src.libs.berrio")
 local config = require("src.modules.config")
 local utils = require("src.modules.utils")
 local ui = require("src.modules.ui")

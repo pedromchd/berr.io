@@ -1,20 +1,25 @@
 -- Game Logic Functions
 local gameLogic = {}
 
+-- Import asset manager for data paths
+local assetManager = require("src.systems.assetManager")
+
 -- Função para inicializar o jogo
 function gameLogic.initGame(difficulty, gameInstances, Berrio)
+    local dataPaths = assetManager.getGameDataPaths()
+
     if difficulty == "easy" then
-        gameInstances.easy = Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv")
+        gameInstances.easy = Berrio:new(dataPaths.answers, dataPaths.guesses)
     elseif difficulty == "medium" then
         gameInstances.medium = {
-            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv"),
-            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv")
+            Berrio:new(dataPaths.answers, dataPaths.guesses),
+            Berrio:new(dataPaths.answers, dataPaths.guesses)
         }
     elseif difficulty == "hard" then
         gameInstances.hard = {
-            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv"),
-            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv"),
-            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv")
+            Berrio:new(dataPaths.answers, dataPaths.guesses),
+            Berrio:new(dataPaths.answers, dataPaths.guesses),
+            Berrio:new(dataPaths.answers, dataPaths.guesses)
         }
     end
 end

@@ -52,6 +52,17 @@ function assetManager.getSound(name) return assets.sounds[name] end
 
 function assetManager.getFont(name) return assets.fonts[name] end
 
+-- Get data file path
+function assetManager.getDataPath(filename) return paths.data .. filename end
+
+-- Get full asset paths for game initialization
+function assetManager.getGameDataPaths()
+    return {
+        answers = paths.data .. "valid_answers.csv",
+        guesses = paths.data .. "valid_guesses.csv"
+    }
+end
+
 -- Load all game assets
 function assetManager.loadAll()
     -- Load background image

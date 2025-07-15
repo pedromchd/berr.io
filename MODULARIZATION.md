@@ -5,9 +5,9 @@
 ```
 berr.io/
 ├── main.lua                    # Main game loop and LÖVE2D callbacks
-├── libraries/
-│   └── berrio.lua             # Berrio library for word validation
 ├── src/
+│   ├── libs/                  # External libraries
+│   │   └── berrio.lua         # Berrio library for word validation
 │   ├── modules/               # Game modules
 │   │   ├── config.lua         # Configuration and constants
 │   │   ├── utils.lua          # Utility functions
