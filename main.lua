@@ -1,9 +1,29 @@
 -- Menu berr.io com tela de instruções
 local menu = {}
+local Berrio = require("libraries.berrio")
 
 -- Estados da tela
 local gameState = "menu" -- "menu", "instructions", "difficulty", "game"
 local bounceTime = 0
+
+-- Instâncias do jogo
+local gameInstances = {easy = nil, medium = {}, hard = {}}
+
+-- Estado do jogo atual
+local currentInput = ""
+local currentRow = 1
+local currentCol = 1
+local showingMessage = false
+local messageText = ""
+local messageTime = 0
+local messageColor = "text"
+
+-- Estado das teclas do teclado
+local keyboardState = {}
+
+-- Debug info
+local debugInfo = {}
+local showDebug = false
 
 -- Configurações da tela
 local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
@@ -55,9 +75,28 @@ local menuButtons = {
 
 -- Botões da tela de dificuldade (centralizados automaticamente)
 local difficultyButtons = {
-    {text = "Fácil", relativeY = 0.3125, action = function() gameState = "game" end},
-    {text = "Médio", relativeY = 0.5, action = function() gameState = "game_medium" end},
-    {text = "Difícil", relativeY = 0.6875, action = function() gameState = "game_hard" end}
+    {
+        text = "Fácil",
+        relativeY = 0.3125,
+        action = function()
+            gameState = "game"
+            initGame("easy")
+        end
+    }, {
+        text = "Médio",
+        relativeY = 0.5,
+        action = function()
+            gameState = "game_medium"
+            initGame("medium")
+        end
+    }, {
+        text = "Difícil",
+        relativeY = 0.6875,
+        action = function()
+            gameState = "game_hard"
+            initGame("hard")
+        end
+    }
 }
 
 local backStates = {
@@ -67,6 +106,9 @@ local backStates = {
     game_medium = true,
     game_hard = true
 }
+
+-- Estado das teclas do teclado
+local keyboardState = {}
 
 -- Função para atualizar dimensões da tela
 function updateScreenDimensions()
@@ -181,9 +223,281 @@ function love.load()
     centerButtons(difficultyButtons)
 end
 
+-- Função para inicializar o jogo
+function initGame(difficulty)
+    if difficulty == "easy" then
+        gameInstances.easy = Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv")
+    elseif difficulty == "medium" then
+        gameInstances.medium = {
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv"),
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv")
+        }
+    elseif difficulty == "hard" then
+        gameInstances.hard = {
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv"),
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv"),
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv")
+        }
+    end
+
+    -- Reset input state
+    currentInput = ""
+    currentRow = 1
+    currentCol = 1
+    showingMessage = false
+    messageText = ""
+    messageTime = 0
+
+    -- Reset keyboard state
+    keyboardState = {}
+end
+
+-- Função para processar entrada de tecla
+function processKeyInput(key)
+    if showingMessage then return end
+
+    -- Verificar se algum jogo ainda está ativo
+    local hasActiveGame = false
+    if gameState == "game" then
+        hasActiveGame = not gameInstances.easy.gameOver
+    elseif gameState == "game_medium" then
+        for i = 1, 2 do
+            if not gameInstances.medium[i].gameOver then
+                hasActiveGame = true
+                break
+            end
+        end
+    elseif gameState == "game_hard" then
+        for i = 1, 3 do
+            if not gameInstances.hard[i].gameOver then
+                hasActiveGame = true
+                break
+            end
+        end
+    end
+
+    if not hasActiveGame then return end
+
+    if key == "backspace" or key == "←" then
+        if #currentInput > 0 then
+            currentInput = currentInput:sub(1, -2)
+            currentCol = math.max(1, currentCol - 1)
+        end
+    elseif key == "return" or key == "enter" or key == "ENTER" then
+        if #currentInput == 5 then
+            local results = {}
+            local anyGameOver = false
+
+            -- Fazer o mesmo palpite em todas as grids ATIVAS (que ainda não terminaram)
+            if gameState == "game" then
+                -- Modo fácil: apenas um grid
+                if not gameInstances.easy.gameOver then
+                    local result = gameInstances.easy:makeGuess(currentInput)
+                    results[1] = result
+                    anyGameOver = result.gameOver and not result.won
+                end
+            elseif gameState == "game_medium" then
+                -- Modo médio: 2 grids simultâneos
+                for i = 1, 2 do
+                    if not gameInstances.medium[i].gameOver then
+                        local result = gameInstances.medium[i]:makeGuess(currentInput)
+                        results[i] = result
+                        if result.gameOver and not result.won then
+                            anyGameOver = true
+                        end
+                    end
+                end
+            elseif gameState == "game_hard" then
+                -- Modo difícil: 3 grids simultâneos
+                for i = 1, 3 do
+                    if not gameInstances.hard[i].gameOver then
+                        local result = gameInstances.hard[i]:makeGuess(currentInput)
+                        results[i] = result
+                        if result.gameOver and not result.won then
+                            anyGameOver = true
+                        end
+                    end
+                end
+            end
+
+            -- Verificar se todas as grids foram ganhas (incluindo as já terminadas)
+            local allWon = true
+            if gameState == "game" then
+                allWon = gameInstances.easy.won or false
+            elseif gameState == "game_medium" then
+                for i = 1, 2 do
+                    if not gameInstances.medium[i].won then
+                        allWon = false
+                        break
+                    end
+                end
+            elseif gameState == "game_hard" then
+                for i = 1, 3 do
+                    if not gameInstances.hard[i].won then
+                        allWon = false
+                        break
+                    end
+                end
+            end
+
+            -- Capturar informações de debug detalhadas (todas as grids)
+            local allAnswers = {}
+            local allResults = {}
+            if gameState == "game" then
+                allAnswers[1] = gameInstances.easy.currentAnswer
+                allResults[1] = results[1]
+            elseif gameState == "game_medium" then
+                for i = 1, 2 do
+                    allAnswers[i] = gameInstances.medium[i].currentAnswer
+                    allResults[i] = results[i]
+                end
+            elseif gameState == "game_hard" then
+                for i = 1, 3 do
+                    allAnswers[i] = gameInstances.hard[i].currentAnswer
+                    allResults[i] = results[i]
+                end
+            end
+
+            debugInfo = {
+                word = currentInput,
+                gameState = gameState,
+                allAnswers = allAnswers,
+                allResults = allResults,
+                overallWon = allWon,
+                overallGameOver = anyGameOver,
+                gridCount = #allAnswers
+            }
+
+            -- Verificar se pelo menos uma grid processou a jogada
+            local anyValidMove = false
+            for _, result in pairs(results) do
+                if result and result.success then
+                    anyValidMove = true
+                    break
+                end
+            end
+
+            if anyValidMove then
+                currentRow = currentRow + 1
+                currentInput = ""
+                currentCol = 1
+
+                -- Atualizar estado do teclado (agora considerando todas as grids)
+                updateKeyboardStateMultiGrid()
+
+                -- Verificar se todas as grids terminaram (won ou lost)
+                local allGridsFinished = true
+                if gameState == "game" then
+                    allGridsFinished = gameInstances.easy.gameOver
+                elseif gameState == "game_medium" then
+                    allGridsFinished = gameInstances.medium[1].gameOver and
+                                           gameInstances.medium[2].gameOver
+                elseif gameState == "game_hard" then
+                    allGridsFinished = gameInstances.hard[1].gameOver and
+                                           gameInstances.hard[2].gameOver and
+                                           gameInstances.hard[3].gameOver
+                end
+
+                if allGridsFinished then
+                    if allWon then
+                        showMessage("Parabéns! Você acertou todos os grids!", "green", 3)
+                    else
+                        -- Mostrar quantos acertou
+                        local wonCount = 0
+                        for _, result in ipairs(results) do
+                            if result.won then wonCount = wonCount + 1 end
+                        end
+
+                        if wonCount > 0 then
+                            showMessage("Você acertou " .. wonCount .. " de " .. #results ..
+                                            " grids!", "yellow", 3)
+                        else
+                            showMessage("Fim de jogo! Uma das palavras era: " ..
+                                            allAnswers[1]:upper(), "red", 5)
+                        end
+                    end
+                elseif allWon then
+                    -- Caso especial: ganhou todas mas nem todas terminaram (isso não deveria acontecer, mas por segurança)
+                    showMessage("Parabéns! Você acertou todos os grids!", "green", 3)
+                end
+            else
+                -- Mostrar mensagem de erro usando o primeiro resultado válido
+                local errorMessage = "Digite uma palavra de 5 letras"
+                for _, result in pairs(results) do
+                    if result and result.message then
+                        errorMessage = result.message
+                        break
+                    end
+                end
+                showMessage(errorMessage, "red", 2)
+            end
+        else
+            showMessage("Digite uma palavra de 5 letras", "yellow", 2)
+        end
+    elseif key:match("^%a$") and #currentInput < 5 then
+        currentInput = currentInput .. key:upper()
+        currentCol = currentCol + 1
+    end
+end
+
+-- Função para mostrar mensagem temporária
+function showMessage(text, color, duration)
+    messageText = text
+    messageColor = color
+    messageTime = duration
+    showingMessage = true
+end
+
+-- Função para atualizar estado do teclado (considerando todas as grids nos modos multi-grid)
+function updateKeyboardStateMultiGrid()
+    -- Resetar estado
+    keyboardState = {}
+
+    local grids = {}
+    if gameState == "game" then
+        grids = {gameInstances.easy}
+    elseif gameState == "game_medium" then
+        grids = gameInstances.medium
+    elseif gameState == "game_hard" then
+        grids = gameInstances.hard
+    end
+
+    -- Processar todas as grids
+    for _, gameInstance in ipairs(grids) do
+        if gameInstance then
+            local gameState = gameInstance:getGameState()
+
+            for _, attempt in ipairs(gameState.attempts) do
+                for i = 1, #attempt.word do
+                    local letter = attempt.word:sub(i, i):upper()
+                    local result = attempt.result.letters[i]
+
+                    if result == true then
+                        keyboardState[letter] = "correct"
+                    elseif result == false and keyboardState[letter] ~= "correct" then
+                        keyboardState[letter] = "wrong_position"
+                    elseif result == nil and keyboardState[letter] ~= "correct" and
+                        keyboardState[letter] ~= "wrong_position" then
+                        keyboardState[letter] = "not_in_word"
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- Função para atualizar estado do teclado (versão antiga para compatibilidade)
+function updateKeyboardState() updateKeyboardStateMultiGrid() end
+
 function love.update(dt)
     local mouseX, mouseY = love.mouse.getPosition()
     bounceTime = bounceTime + dt
+
+    -- Atualizar timer de mensagem
+    if showingMessage then
+        messageTime = messageTime - dt
+        if messageTime <= 0 then showingMessage = false end
+    end
 
     if gameState == "menu" then
         for _, button in ipairs(menuButtons) do
@@ -227,6 +541,9 @@ function love.draw()
     end
 
     love.graphics.pop()
+
+    -- Desenhar informações de debug
+    drawDebugInfo()
 end
 
 function drawMenu()
@@ -422,20 +739,117 @@ function drawDifficulty()
 end
 
 -- Função auxiliar para desenhar uma grade em uma posição específica com linhas e colunas definidas
-function drawGridAt(startX, startY, rows, cols, gridDimensions)
+function drawGridAt(startX, startY, rows, cols, gridDimensions, gameInstance)
     local grid = gridDimensions or getGridDimensions()
+    local gameState = gameInstance and gameInstance:getGameState() or nil
+
     for row = 0, rows - 1 do
         for col = 0, cols - 1 do
             local x = startX + col * (grid.boxSize + grid.spacing)
             local y = startY + row * (grid.boxSize + grid.spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
+
+            -- Determinar cor da caixa
+            local boxColor = {0.2, 0.2, 0.2}
+            local textColor = colors.buttonText
+            local letter = ""
+
+            if gameState then
+                local attemptIndex = row + 1
+                local letterIndex = col + 1
+
+                if attemptIndex <= #gameState.attempts then
+                    -- Tentativa já feita
+                    local attempt = gameState.attempts[attemptIndex]
+                    letter = attempt.word:sub(letterIndex, letterIndex):upper()
+
+                    local letterResult = attempt.result.letters[letterIndex]
+                    if letterResult == true then
+                        boxColor = colors.green
+                    elseif letterResult == false then
+                        boxColor = colors.yellow
+                    else
+                        boxColor = colors.red
+                    end
+                elseif attemptIndex == currentRow and not gameInstance.gameOver then
+                    -- Linha atual sendo digitada (apenas em grids que ainda estão ativas)
+                    if letterIndex <= #currentInput then
+                        letter = currentInput:sub(letterIndex, letterIndex)
+                        boxColor = {0.3, 0.3, 0.3}
+                    end
+                end
+            end
+
+            love.graphics.setColor(boxColor)
             love.graphics.rectangle("fill", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
                                     4 * getScale())
             love.graphics.setColor(colors.border)
             love.graphics.rectangle("line", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
                                     4 * getScale())
+
+            -- Desenhar letra
+            if letter ~= "" then
+                love.graphics.setFont(buttonFont)
+                love.graphics.setColor(textColor)
+                local letterWidth = buttonFont:getWidth(letter)
+                local letterHeight = buttonFont:getHeight()
+                local letterX = x + (grid.boxSize - letterWidth) / 2
+                local letterY = y + (grid.boxSize - letterHeight) / 2
+                love.graphics.print(letter, letterX, letterY)
+            end
         end
     end
+end
+
+-- Função para desenhar mensagem
+function drawMessage()
+    if not showingMessage then
+        -- Mostrar instrução de reiniciar se TODAS as grids acabaram
+        local gameEnded = false
+        if gameState == "game" then
+            gameEnded = gameInstances.easy.gameOver
+        elseif gameState == "game_medium" then
+            gameEnded = gameInstances.medium[1].gameOver and gameInstances.medium[2].gameOver
+        elseif gameState == "game_hard" then
+            gameEnded = gameInstances.hard[1].gameOver and gameInstances.hard[2].gameOver and
+                            gameInstances.hard[3].gameOver
+        end
+
+        if gameEnded then
+            local content = getContentArea()
+            love.graphics.setFont(textFont)
+
+            local restartText = "Pressione R para jogar novamente ou ESC para voltar ao menu"
+            local textWidth = textFont:getWidth(restartText)
+            local textHeight = textFont:getHeight()
+            local x = (content.width - textWidth) / 2
+            local y = content.height * 0.90
+
+            -- Fundo da mensagem de restart
+            love.graphics.setColor(0, 0, 0, 0.8)
+            love.graphics.rectangle("fill", x - 25, y - 15, textWidth + 50, textHeight + 30, 10)
+
+            -- Texto da mensagem de restart
+            love.graphics.setColor(colors.text)
+            love.graphics.print(restartText, x, y)
+        end
+        return
+    end
+
+    local content = getContentArea()
+    love.graphics.setFont(buttonFont)
+
+    local textWidth = buttonFont:getWidth(messageText)
+    local textHeight = buttonFont:getHeight()
+    local x = (content.width - textWidth) / 2
+    local y = content.height * 0.85
+
+    -- Fundo da mensagem com padding maior para garantir visibilidade
+    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.rectangle("fill", x - 25, y - 15, textWidth + 50, textHeight + 30, 10)
+
+    -- Texto da mensagem
+    love.graphics.setColor(colors[messageColor] or colors.text)
+    love.graphics.print(messageText, x, y)
 end
 
 function drawGameEasy()
@@ -457,10 +871,13 @@ function drawGameEasy()
     local startX = (content.width - gridWidth) / 2
     local startY = content.height * 0.12
 
-    drawGridAt(startX, startY-15, 6, 5, grid)
+    drawGridAt(startX, startY - 15, 6, 5, grid, gameInstances.easy)
 
     -- Teclado virtual
     drawVirtualKeyboard()
+
+    -- Mensagem
+    drawMessage()
 end
 
 function drawGameMid()
@@ -485,11 +902,14 @@ function drawGameMid()
     local startX2 = startX1 + gridWidth + gridSeparation
     local startY = content.height * 0.12
 
-    drawGridAt(startX1, startY-15, 6, 5, grid)
-    drawGridAt(startX2, startY-15, 6, 5, grid)
+    drawGridAt(startX1, startY - 15, 6, 5, grid, gameInstances.medium[1])
+    drawGridAt(startX2, startY - 15, 6, 5, grid, gameInstances.medium[2])
 
     -- Teclado virtual abaixo das grades
     drawVirtualKeyboard()
+
+    -- Mensagem
+    drawMessage()
 end
 
 function drawGameHard()
@@ -517,12 +937,15 @@ function drawGameHard()
 
     local startY = content.height * 0.12
 
-    drawGridAt(startX1, startY-15, 6, 5, grid)
-    drawGridAt(startX2, startY-15, 6, 5, grid)
-    drawGridAt(startX3, startY-15, 6, 5, grid)
+    drawGridAt(startX1, startY - 15, 6, 5, grid, gameInstances.hard[1])
+    drawGridAt(startX2, startY - 15, 6, 5, grid, gameInstances.hard[2])
+    drawGridAt(startX3, startY - 15, 6, 5, grid, gameInstances.hard[3])
 
     -- Teclado virtual maior para o modo difícil
     drawVirtualKeyboardHard()
+
+    -- Mensagem
+    drawMessage()
 end
 
 function drawVirtualKeyboard()
@@ -557,7 +980,20 @@ function drawVirtualKeyboard()
             x = x + margin
             local y = startY + (rowIndex - 1) * (keyHeight + spacing)
 
-            love.graphics.setColor(0.15, 0.15, 0.15)
+            -- Determinar cor baseada no estado da tecla
+            local keyColor = {0.15, 0.15, 0.15}
+            if key ~= "←" and key ~= "ENTER" then
+                local keyState = keyboardState[key]
+                if keyState == "correct" then
+                    keyColor = colors.green
+                elseif keyState == "wrong_position" then
+                    keyColor = colors.yellow
+                elseif keyState == "not_in_word" then
+                    keyColor = colors.red
+                end
+            end
+
+            love.graphics.setColor(keyColor)
             love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
 
             love.graphics.setColor(colors.border)
@@ -607,7 +1043,20 @@ function drawVirtualKeyboardHard()
             x = x + margin
             local y = startY + (rowIndex - 1) * (keyHeight + spacing)
 
-            love.graphics.setColor(0.15, 0.15, 0.15)
+            -- Determinar cor baseada no estado da tecla
+            local keyColor = {0.15, 0.15, 0.15}
+            if key ~= "←" and key ~= "ENTER" then
+                local keyState = keyboardState[key]
+                if keyState == "correct" then
+                    keyColor = colors.green
+                elseif keyState == "wrong_position" then
+                    keyColor = colors.yellow
+                elseif keyState == "not_in_word" then
+                    keyColor = colors.red
+                end
+            end
+
+            love.graphics.setColor(keyColor)
             love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
 
             love.graphics.setColor(colors.border)
@@ -643,8 +1092,76 @@ function love.mousepressed(x, y, button)
                     break
                 end
             end
+        elseif gameState == "game" or gameState == "game_medium" or gameState == "game_hard" then
+            -- Verificar cliques no teclado virtual
+            local keyPressed = getVirtualKeyPressed(x, y)
+            if keyPressed then
+                love.audio.play(clickSound)
+                processKeyInput(keyPressed)
+            end
         end
     end
+end
+
+-- Função para detectar clique no teclado virtual
+function getVirtualKeyPressed(mouseX, mouseY)
+    local content = getContentArea()
+    local scale = getScale()
+    local keyHeight, keyWidth, enterWidth, spacing, startY
+
+    if gameState == "game_hard" then
+        keyHeight = math.floor(85 * scale)
+        keyWidth = math.floor(75 * scale)
+        enterWidth = math.floor(180 * scale)
+        spacing = math.floor(15 * scale)
+        startY = content.y + content.height * 0.63
+    else
+        keyHeight = math.floor(70 * scale)
+        keyWidth = math.floor(60 * scale)
+        enterWidth = math.floor(150 * scale)
+        spacing = math.floor(12 * scale)
+        startY = content.y + content.height * 0.70
+    end
+
+    local enterExtraMargin = math.floor(30 * scale)
+
+    for rowIndex, row in ipairs(keyboardLayout) do
+        local totalWidth = 0
+        for _, key in ipairs(row) do
+            if key == "ENTER" then
+                totalWidth = totalWidth + enterWidth + enterExtraMargin
+            else
+                totalWidth = totalWidth + keyWidth
+            end
+            totalWidth = totalWidth + spacing
+        end
+        totalWidth = totalWidth - spacing
+
+        local startX = content.x + (content.width - totalWidth) / 2
+        local x = startX
+
+        for _, key in ipairs(row) do
+            local thisKeyWidth = (key == "ENTER") and enterWidth or keyWidth
+            local margin = (key == "ENTER") and enterExtraMargin or 0
+
+            x = x + margin
+            local y = startY + (rowIndex - 1) * (keyHeight + spacing)
+
+            if isPointInRect(mouseX, mouseY, x, y, thisKeyWidth, keyHeight) then
+                if key == "←" then
+                    return "backspace"
+                elseif key == "ENTER" then
+                    return "return"
+                else
+                    return key:lower()
+                end
+            end
+
+            x = x + thisKeyWidth + spacing
+        end
+    end
+
+    return nil
 end
 
 function love.keypressed(key)
@@ -654,6 +1171,110 @@ function love.keypressed(key)
         else
             love.event.quit()
         end
+    elseif key == "f1" then
+        -- Toggle debug mode
+        showDebug = not showDebug
+    elseif gameState == "game" or gameState == "game_medium" or gameState == "game_hard" then
+        -- Verificar se TODAS as grids acabaram para permitir restart
+        local gameEnded = false
+        if gameState == "game" then
+            gameEnded = gameInstances.easy.gameOver
+        elseif gameState == "game_medium" then
+            gameEnded = gameInstances.medium[1].gameOver and gameInstances.medium[2].gameOver
+        elseif gameState == "game_hard" then
+            gameEnded = gameInstances.hard[1].gameOver and gameInstances.hard[2].gameOver and
+                            gameInstances.hard[3].gameOver
+        end
+
+        if key == "r" and gameEnded then
+            -- Reiniciar o jogo
+            if gameState == "game" then
+                initGame("easy")
+            elseif gameState == "game_medium" then
+                initGame("medium")
+            elseif gameState == "game_hard" then
+                initGame("hard")
+            end
+        else
+            processKeyInput(key)
+        end
+    end
+end
+
+-- Função para desenhar informações de debug
+function drawDebugInfo()
+    if not showDebug or not debugInfo.word then return end
+
+    love.graphics.setFont(textFont)
+    love.graphics.setColor(1, 1, 0) -- Amarelo
+
+    local y = 10
+    local lineHeight = textFont:getHeight() + 2
+
+    love.graphics.print("=== DEBUG INFO (Press F1 to toggle) ===", 10, y)
+    y = y + lineHeight * 2
+
+    love.graphics.print("Palavra digitada: " .. debugInfo.word, 10, y)
+    y = y + lineHeight
+
+    love.graphics.print("Game State: " .. debugInfo.gameState, 10, y)
+    y = y + lineHeight
+
+    love.graphics.print("Total grids: " .. debugInfo.gridCount, 10, y)
+    y = y + lineHeight
+
+    love.graphics.print("Overall Won: " .. tostring(debugInfo.overallWon), 10, y)
+    y = y + lineHeight
+
+    love.graphics.print("Overall Game Over: " .. tostring(debugInfo.overallGameOver), 10, y)
+    y = y + lineHeight * 2
+
+    -- Mostrar informações de cada grid
+    for i = 1, debugInfo.gridCount do
+        love.graphics.setColor(0, 1, 1) -- Ciano para destacar cada grid
+        love.graphics.print("--- GRID " .. i .. " ---", 10, y)
+        y = y + lineHeight
+
+        love.graphics.setColor(1, 1, 0) -- Voltar ao amarelo
+        love.graphics.print("Resposta: " .. (debugInfo.allAnswers[i] or "N/A"), 10, y)
+        y = y + lineHeight
+
+        local result = debugInfo.allResults[i]
+        if result then
+            love.graphics.print("Won: " .. tostring(result.won), 10, y)
+            y = y + lineHeight
+
+            love.graphics.print("Game Over: " .. tostring(result.gameOver), 10, y)
+            y = y + lineHeight
+
+            love.graphics.print("Perfect Match: " ..
+                                    tostring(result.match and result.match.perfect or false), 10, y)
+            y = y + lineHeight
+
+            love.graphics.print("Success: " .. tostring(result.success), 10, y)
+            y = y + lineHeight
+
+            if result.match and result.match.letters then
+                love.graphics.print("Match Details:", 10, y)
+                y = y + lineHeight
+
+                -- Garantir que mostramos todos os 5 resultados
+                for j = 1, 5 do
+                    local letter = debugInfo.word:sub(j, j)
+                    local letterResult = result.match.letters[j]
+                    local resultText = "nil"
+                    if letterResult == true then
+                        resultText = "TRUE"
+                    elseif letterResult == false then
+                        resultText = "FALSE"
+                    end
+                    love.graphics.print("  " .. j .. ": " .. letter .. " -> " .. resultText, 10, y)
+                    y = y + lineHeight
+                end
+            end
+        end
+
+        y = y + lineHeight -- Espaço entre grids
     end
 end
 
