@@ -43,7 +43,6 @@ local titleFont, difficultyTitleFont, buttonFont, textFont
 -- Configurações importadas
 local colors = config.colors
 local keyboardLayout = config.keyboardLayout
-local backStates = config.backStates
 
 -- Botões criados dinamicamente
 local menuButtons
@@ -195,10 +194,10 @@ function love.draw()
                               keyboardLayout, keyboardState, showingMessage, messageText,
                               messageColor, stateManager.getState())
     elseif stateManager.getState() == "game_medium" then
-        gameDraw.drawGameMid(colors, difficultyTitleFont, buttonFont, content, gameInstances, ui,
-                             utils, screenWidth, screenHeight, currentInput, currentRow,
-                             keyboardLayout, keyboardState, showingMessage, messageText,
-                             messageColor, stateManager.getState())
+        gameDraw.drawGameMedium(colors, difficultyTitleFont, buttonFont, content, gameInstances, ui,
+                                utils, screenWidth, screenHeight, currentInput, currentRow,
+                                keyboardLayout, keyboardState, showingMessage, messageText,
+                                messageColor, stateManager.getState())
     elseif stateManager.getState() == "game_hard" then
         gameDraw.drawGameHard(colors, difficultyTitleFont, buttonFont, content, gameInstances, ui,
                               utils, screenWidth, screenHeight, currentInput, currentRow,
@@ -259,7 +258,8 @@ function love.keypressed(key)
         local currentState = stateManager.getState()
         if currentState == "game" then
             -- Check if easy game is done
-            gameEnded = gameInstances.easy and gameInstances.easy.gameOver
+            local easyGame = gameInstances.easy
+            gameEnded = easyGame and easyGame.gameOver or false
         elseif currentState == "game_medium" then
             gameEnded = (gameInstances.medium[1] and gameInstances.medium[1].gameOver) and
                             (gameInstances.medium[2] and gameInstances.medium[2].gameOver)

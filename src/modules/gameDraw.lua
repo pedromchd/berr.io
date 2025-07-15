@@ -34,10 +34,10 @@ function gameDraw.drawGameEasy(colors, difficultyTitleFont, buttonFont, content,
                    buttonFont, buttonFont, content)
 end
 
-function gameDraw.drawGameMid(colors, difficultyTitleFont, buttonFont, content, gameInstances, ui,
-                              utils, screenWidth, screenHeight, currentInput, currentRow,
-                              keyboardLayout, keyboardState, showingMessage, messageText,
-                              messageColor, gameState)
+function gameDraw.drawGameMedium(colors, difficultyTitleFont, buttonFont, content, gameInstances,
+                                 ui, utils, screenWidth, screenHeight, currentInput, currentRow,
+                                 keyboardLayout, keyboardState, showingMessage, messageText,
+                                 messageColor, gameState)
     -- Título "berr.io" no topo
     love.graphics.setFont(difficultyTitleFont)
     love.graphics.setColor(colors.title)

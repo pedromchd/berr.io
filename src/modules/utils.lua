@@ -1,4 +1,5 @@
 -- Utility Functions for screen handling, button management, etc.
+-- TODO: Add unit tests to cover scaling, button centering, and grid dimension calculations
 local utils = {}
 
 -- Função para atualizar dimensões da tela
