@@ -1,4 +1,3 @@
--- Menu berr.io com tela de instruções - Modularized version
 local Berrio = require("src.libs.berrio")
 local config = require("src.modules.config")
 local utils = require("src.modules.utils")
@@ -8,13 +7,8 @@ local gameDraw = require("src.modules.gameDraw")
 local assetManager = require("src.systems.assetManager")
 local stateManager = require("src.systems.stateManager")
 
--- Estados da tela
 local bounceTime = 0
-
--- Instâncias do jogo
 local gameInstances = {easy = nil, medium = {}, hard = {}}
-
--- Estado do jogo atual
 local currentInput = ""
 local currentRow = 1
 local currentCol = 1
@@ -22,51 +16,40 @@ local showingMessage = false
 local messageText = ""
 local messageTime = 0
 local messageColor = "text"
-
--- Estado das teclas do teclado
 local keyboardState = {}
-
--- Debug info
 local debugInfo = {}
 local showDebug = false
-
--- Configurações da tela
 local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
-
--- Imagem de fundo
 local backgroundImage
 local clickSound
-
--- Fontes responsivas
 local titleFont, difficultyTitleFont, buttonFont, textFont
-
--- Configurações importadas
 local colors = config.colors
 local keyboardLayout = config.keyboardLayout
-
--- Botões criados dinamicamente
 local menuButtons
 local difficultyButtons
 
--- Helper functions using the modularized utilities
+-- Atualiza dimensões da tela
 local function updateScreenDimensions() screenWidth, screenHeight = utils.updateScreenDimensions() end
 
+-- Obtém escala para interface responsiva
 local function getScale() return utils.getScale(screenWidth, screenHeight) end
 
+-- Obtém área centralizada de conteúdo
 local function getContentArea() return utils.getContentArea(screenWidth, screenHeight) end
 
+-- Carrega fontes com escala adequada
 local function loadFonts()
     titleFont, difficultyTitleFont, buttonFont, textFont =
         utils.loadFonts(screenWidth, screenHeight)
 end
 
+-- Centraliza botões na tela
 local function centerButtons(buttons) utils.centerButtons(buttons, screenWidth, screenHeight) end
 
--- Função para inicializar o jogo
+-- Inicializa uma nova partida
 local function initGame(difficulty)
     gameLogic.initGame(difficulty, gameInstances, Berrio)
 
-    -- Reset input state
     currentInput = ""
     currentRow = 1
     currentCol = 1
@@ -74,11 +57,10 @@ local function initGame(difficulty)
     messageText = ""
     messageTime = 0
 
-    -- Reset keyboard state
     keyboardState = {}
 end
 
--- Função para mostrar mensagem temporária
+-- Exibe mensagem temporária na tela
 local function showMessage(text, color, duration)
     messageText = text
     messageColor = color
@@ -86,12 +68,12 @@ local function showMessage(text, color, duration)
     showingMessage = true
 end
 
--- Função para atualizar estado do teclado
+-- Atualiza estado das teclas do teclado virtual
 local function updateKeyboardStateMultiGrid()
     gameLogic.updateKeyboardStateMultiGrid(stateManager.getState(), gameInstances, keyboardState)
 end
 
--- Função para processar entrada de tecla
+-- Processa entrada de tecla do jogador
 local function processKeyInput(key)
     currentInput, currentRow, currentCol = gameLogic.processKeyInput(key, currentInput, currentRow,
                                                                      currentCol, showingMessage,
@@ -101,27 +83,23 @@ local function processKeyInput(key)
                                                                      updateKeyboardStateMultiGrid)
 end
 
--- LÖVE2D callback functions
+-- LÖVE2D - Inicialização do jogo
 function love.load()
     love.window.setMode(screenWidth, screenHeight)
     updateScreenDimensions()
     love.window.setTitle("berr.io")
 
-    -- Load all assets using asset manager
     assetManager.loadAll()
     backgroundImage = assetManager.getImage("background")
     clickSound = assetManager.getSound("click")
 
-    -- Carregar fontes com escala
     loadFonts()
 
-    -- Criar botões dinamicamente
     local function changeState(newState) stateManager.setState(newState) end
 
     menuButtons = config.createMenuButtons()
     difficultyButtons = config.createDifficultyButtons(initGame)
 
-    -- Set the changeState function for the buttons
     for _, button in ipairs(menuButtons) do
         local originalAction = button.action
         button.action = function() originalAction(changeState) end
@@ -131,7 +109,6 @@ function love.load()
         button.action = function() originalAction(changeState) end
     end
 
-    -- Centralizar todos os botões
     centerButtons(menuButtons)
     centerButtons(difficultyButtons)
 end
@@ -143,11 +120,11 @@ function love.resize(w, h)
     centerButtons(difficultyButtons)
 end
 
+-- LÖVE2D - Atualização a cada frame
 function love.update(dt)
     local mouseX, mouseY = love.mouse.getPosition()
     bounceTime = bounceTime + dt
 
-    -- Atualizar timer de mensagem
     if showingMessage then
         messageTime = messageTime - dt
         if messageTime <= 0 then showingMessage = false end
@@ -166,8 +143,8 @@ function love.update(dt)
     end
 end
 
+-- LÖVE2D - Desenho na tela
 function love.draw()
-    -- Desenhar fundo em toda a tela
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(backgroundImage, 0, 0, 0, screenWidth / backgroundImage:getWidth(),
                        screenHeight / backgroundImage:getHeight())
@@ -175,7 +152,6 @@ function love.draw()
     love.graphics.setColor(0, 0, 0, 0.6)
     love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight)
 
-    -- Aplicar transformação para área de conteúdo centralizada
     local content = getContentArea()
     love.graphics.push()
     love.graphics.translate(content.x, content.y)
@@ -207,10 +183,10 @@ function love.draw()
 
     love.graphics.pop()
 
-    -- Desenhar informações de debug
     ui.drawDebugInfo(showDebug, debugInfo, textFont)
 end
 
+-- LÖVE2D - Cliques do mouse
 function love.mousepressed(x, y, button)
     if button == 1 then
         if stateManager.getState() == "menu" then
@@ -230,7 +206,6 @@ function love.mousepressed(x, y, button)
                 end
             end
         elseif stateManager.isGameState() then
-            -- Verificar cliques no teclado virtual
             local keyPressed = utils.getVirtualKeyPressed(x, y, stateManager.getState(),
                                                           keyboardLayout, screenWidth, screenHeight)
             if keyPressed then
@@ -241,6 +216,7 @@ function love.mousepressed(x, y, button)
     end
 end
 
+-- LÖVE2D - Teclas pressionadas
 function love.keypressed(key)
     if key == "escape" then
         local backState = stateManager.getBackState()
@@ -250,14 +226,11 @@ function love.keypressed(key)
             love.event.quit()
         end
     elseif key == "f1" then
-        -- Toggle debug mode
         showDebug = not showDebug
     elseif stateManager.isGameState() then
-        -- Verificar se TODAS as grids acabaram para permitir restart
         local gameEnded = false
         local currentState = stateManager.getState()
         if currentState == "game" then
-            -- Check if easy game is done
             local easyGame = gameInstances.easy
             gameEnded = easyGame and easyGame.gameOver or false
         elseif currentState == "game_medium" then
@@ -270,7 +243,6 @@ function love.keypressed(key)
         end
 
         if key == "r" and gameEnded then
-            -- Reiniciar o jogo
             if currentState == "game" then
                 initGame("easy")
             elseif currentState == "game_medium" then

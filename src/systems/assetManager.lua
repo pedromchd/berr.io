@@ -1,10 +1,7 @@
--- Asset Manager
 local assetManager = {}
 
--- Asset storage
 local assets = {images = {}, sounds = {}, fonts = {}}
 
--- Asset paths
 local paths = {
     images = "assets/images/",
     sounds = "assets/audio/",
@@ -12,7 +9,7 @@ local paths = {
     data = "assets/data/"
 }
 
--- Load an image asset
+-- Carrega uma imagem
 function assetManager.loadImage(name, filename)
     if filename then
         assets.images[name] = love.graphics.newImage(filename)
@@ -22,7 +19,7 @@ function assetManager.loadImage(name, filename)
     return assets.images[name]
 end
 
--- Load a sound asset
+-- Carrega um som
 function assetManager.loadSound(name, filename, soundType)
     soundType = soundType or "static"
     if filename then
@@ -33,7 +30,7 @@ function assetManager.loadSound(name, filename, soundType)
     return assets.sounds[name]
 end
 
--- Load a font asset
+-- Carrega uma fonte
 function assetManager.loadFont(name, filename, size)
     if filename and size then
         assets.fonts[name] = love.graphics.newFont(filename, size)
@@ -45,17 +42,17 @@ function assetManager.loadFont(name, filename, size)
     return assets.fonts[name]
 end
 
--- Get an asset
+-- Obtém assets carregados
 function assetManager.getImage(name) return assets.images[name] end
 
 function assetManager.getSound(name) return assets.sounds[name] end
 
 function assetManager.getFont(name) return assets.fonts[name] end
 
--- Get data file path
+-- Retorna caminho de arquivo de dados
 function assetManager.getDataPath(filename) return paths.data .. filename end
 
--- Get full asset paths for game initialization
+-- Retorna caminhos dos dados do jogo
 function assetManager.getGameDataPaths()
     return {
         answers = paths.data .. "valid_answers.csv",
@@ -63,19 +60,14 @@ function assetManager.getGameDataPaths()
     }
 end
 
--- Load all game assets
+-- Carrega todos os assets do jogo
 function assetManager.loadAll()
-    -- Load background image
     assetManager.loadImage("background", "assets/images/fundo.jpg")
-
-    -- Load click sound
     assetManager.loadSound("click", "assets/audio/click_sound.mp3", "static")
-
-    -- Load base font - sizes will be calculated dynamically in utils
     assets.fonts.base = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf", 12)
 end
 
--- Clear all assets
+-- Limpa todos os assets
 function assetManager.clear()
     assets.images = {}
     assets.sounds = {}

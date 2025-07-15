@@ -1,18 +1,11 @@
--- Simple Game State Manager
 local stateManager = {}
 
--- Valid states and their transitions
 local validStates = {"menu", "instructions", "difficulty", "game", "game_medium", "game_hard"}
-
--- Current state
 local currentState = "menu"
-
--- State change callbacks
 local stateCallbacks = {}
 
--- Set current state
+-- Define estado atual do jogo
 function stateManager.setState(newState)
-    -- Validate state
     local isValid = false
     for _, state in ipairs(validStates) do
         if state == newState then
@@ -29,24 +22,23 @@ function stateManager.setState(newState)
     local oldState = currentState
     currentState = newState
 
-    -- Call state change callback if it exists
     if stateCallbacks[newState] then stateCallbacks[newState](oldState, newState) end
 
     return true
 end
 
--- Get current state
+-- Retorna estado atual
 function stateManager.getState() return currentState end
 
--- Register a callback for when entering a specific state
+-- Registra callback para mudança de estado
 function stateManager.onEnterState(state, callback) stateCallbacks[state] = callback end
 
--- Check if current state is one of the game states
+-- Verifica se está em modo de jogo
 function stateManager.isGameState()
     return currentState == "game" or currentState == "game_medium" or currentState == "game_hard"
 end
 
--- Get back state (where to go when pressing ESC)
+-- Retorna estado anterior para voltar
 function stateManager.getBackState()
     local backStates = {
         instructions = "menu",

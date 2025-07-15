@@ -1,7 +1,6 @@
--- UI and Drawing Functions
 local ui = {}
 
--- Função para quebrar texto conforme largura disponível
+-- Quebra texto em múltiplas linhas
 function ui.wrapText(text, font, maxWidth)
     local words = {}
     for word in text:gmatch("%S+") do table.insert(words, word) end
@@ -28,6 +27,7 @@ function ui.wrapText(text, font, maxWidth)
     return lines
 end
 
+-- Desenha tela do menu principal
 function ui.drawMenu(colors, titleFont, buttonFont, textFont, content, bounceTime, menuButtons,
                      getScale)
     love.graphics.setColor(colors.text)
@@ -74,8 +74,9 @@ function ui.drawMenu(colors, titleFont, buttonFont, textFont, content, bounceTim
     end
 end
 
+-- Desenha tela de instruções
 function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
-    local padding = content.width * 0.05 -- 5% de padding
+    local padding = content.width * 0.05
 
     love.graphics.setColor(colors.title)
     love.graphics.setFont(titleFont)
@@ -103,15 +104,14 @@ function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
         }
     }
 
-    local lineHeight = textFont:getHeight() * 1.6 -- Ajustado para equilibrar espaço e legibilidade
-    local startY = content.height * 0.18 -- Movido mais para baixo para dar espaço ao título
+    local lineHeight = textFont:getHeight() * 1.6
+    local startY = content.height * 0.18
     local maxTextWidth = content.width - padding * 2
     local currentY = startY
 
     for i, instruction in ipairs(instructions) do
         local wrappedLines = ui.wrapText(instruction.text, textFont, maxTextWidth)
 
-        -- Determinar cor baseada no tipo de instrução
         local color = colors[instruction.color] or colors.text
 
         for _, wrappedLine in ipairs(wrappedLines) do
@@ -120,12 +120,10 @@ function ui.drawInstructions(colors, titleFont, textFont, content, getScale)
             currentY = currentY + lineHeight
         end
 
-        -- Adicionar espaço extra após certas instruções
         if i == 1 or i == 2 or i == 3 or i == 7 then currentY = currentY + lineHeight * 0.6 end
     end
 
-    -- Seção de exemplos logo após o texto (posição dinâmica)
-    local examplesY = currentY + lineHeight * 1.2 -- Reduzido para economizar espaço
+    local examplesY = currentY + lineHeight * 1.2
     love.graphics.setColor(colors.text)
     local examplesTitle = "Exemplos:"
     local examplesTitleWidth = textFont:getWidth(examplesTitle)

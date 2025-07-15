@@ -1,10 +1,8 @@
--- Game Logic Functions
 local gameLogic = {}
 
--- Import asset manager for data paths
 local assetManager = require("src.systems.assetManager")
 
--- Função para inicializar o jogo
+-- Inicializa uma nova partida com a dificuldade selecionada
 function gameLogic.initGame(difficulty, gameInstances, Berrio)
     local dataPaths = assetManager.getGameDataPaths()
 
@@ -24,13 +22,12 @@ function gameLogic.initGame(difficulty, gameInstances, Berrio)
     end
 end
 
--- Função para processar entrada de tecla
+-- Processa entrada de tecla do jogador
 function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, showingMessage,
                                    gameState, gameInstances, keyboardState, debugInfo, showMessage,
                                    updateKeyboardStateMultiGrid)
     if showingMessage then return currentInput, currentRow, currentCol end
 
-    -- Verificar se algum jogo ainda está ativo
     local hasActiveGame = false
     if gameState == "game" then
         hasActiveGame = not gameInstances.easy.gameOver
@@ -62,16 +59,13 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
             local results = {}
             local anyGameOver = false
 
-            -- Fazer o mesmo palpite em todas as grids ATIVAS (que ainda não terminaram)
             if gameState == "game" then
-                -- Modo fácil: apenas um grid
                 if not gameInstances.easy.gameOver then
                     local result = gameInstances.easy:makeGuess(currentInput)
                     results[1] = result
                     anyGameOver = result.gameOver and not result.won
                 end
             elseif gameState == "game_medium" then
-                -- Modo médio: 2 grids simultâneos
                 for i = 1, 2 do
                     if not gameInstances.medium[i].gameOver then
                         local result = gameInstances.medium[i]:makeGuess(currentInput)
@@ -82,7 +76,6 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                     end
                 end
             elseif gameState == "game_hard" then
-                -- Modo difícil: 3 grids simultâneos
                 for i = 1, 3 do
                     if not gameInstances.hard[i].gameOver then
                         local result = gameInstances.hard[i]:makeGuess(currentInput)
@@ -94,7 +87,6 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                 end
             end
 
-            -- Verificar se todas as grids foram ganhas (incluindo as já terminadas)
             local allWon = true
             if gameState == "game" then
                 allWon = gameInstances.easy.won or false
@@ -114,7 +106,6 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                 end
             end
 
-            -- Capturar informações de debug detalhadas (todas as grids)
             local allAnswers = {}
             local allResults = {}
             if gameState == "game" then
@@ -140,7 +131,6 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
             debugInfo.overallGameOver = anyGameOver
             debugInfo.gridCount = #allAnswers
 
-            -- Verificar se pelo menos uma grid processou a jogada
             local anyValidMove = false
             for _, result in pairs(results) do
                 if result and result.success then
@@ -154,10 +144,8 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                 currentInput = ""
                 currentCol = 1
 
-                -- Atualizar estado do teclado (agora considerando todas as grids)
                 updateKeyboardStateMultiGrid()
 
-                -- Verificar se todas as grids terminaram (won ou lost)
                 local allGridsFinished = true
                 if gameState == "game" then
                     allGridsFinished = gameInstances.easy.gameOver
@@ -174,7 +162,6 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                     if allWon then
                         showMessage("Parabéns! Você acertou todos os grids!", "green", 3)
                     else
-                        -- Mostrar quantos acertou
                         local wonCount = 0
                         for _, result in ipairs(results) do
                             if result.won then wonCount = wonCount + 1 end
@@ -184,7 +171,6 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                             showMessage("Você acertou " .. wonCount .. " de " .. #results ..
                                             " grids!", "yellow", 3)
                         else
-                            -- Mostrar todas as palavras corretas
                             local allAnswersText = ""
                             for i, answer in ipairs(allAnswers) do
                                 if i > 1 then
@@ -196,11 +182,9 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                         end
                     end
                 elseif allWon then
-                    -- Caso especial: ganhou todas mas nem todas terminaram (isso não deveria acontecer, mas por segurança)
                     showMessage("Parabéns! Você acertou todos os grids!", "green", 3)
                 end
             else
-                -- Mostrar mensagem de erro usando o primeiro resultado válido
                 local errorMessage = "Digite uma palavra de 5 letras"
                 for _, result in pairs(results) do
                     if result and result.message then
@@ -221,9 +205,8 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
     return currentInput, currentRow, currentCol
 end
 
--- Função para atualizar estado do teclado (considerando todas as grids nos modos multi-grid)
+-- Atualiza estado do teclado virtual baseado em todas as tentativas
 function gameLogic.updateKeyboardStateMultiGrid(gameState, gameInstances, keyboardState)
-    -- Resetar estado
     for k in pairs(keyboardState) do keyboardState[k] = nil end
 
     local grids = {}
@@ -235,9 +218,7 @@ function gameLogic.updateKeyboardStateMultiGrid(gameState, gameInstances, keyboa
         grids = gameInstances.hard
     end
 
-    -- Para modos com múltiplas grids, criar estado dividido por grid
     if #grids > 1 then
-        -- Criar estado separado para cada grid
         for gridIndex, gameInstance in ipairs(grids) do
             if gameInstance then
                 local gameStateData = gameInstance:getGameState()
@@ -247,12 +228,10 @@ function gameLogic.updateKeyboardStateMultiGrid(gameState, gameInstances, keyboa
                         local letter = attempt.word:sub(i, i):upper()
                         local result = attempt.result.letters[i]
 
-                        -- Inicializar array se não existir
                         if not keyboardState[letter] then
                             keyboardState[letter] = {}
                         end
 
-                        -- Armazenar resultado para esta grid específica
                         if result == true then
                             keyboardState[letter][gridIndex] = "correct"
                         elseif result == false and keyboardState[letter][gridIndex] ~= "correct" then
@@ -266,7 +245,6 @@ function gameLogic.updateKeyboardStateMultiGrid(gameState, gameInstances, keyboa
             end
         end
     else
-        -- Modo fácil (uma grid) - comportamento original
         for _, gameInstance in ipairs(grids) do
             if gameInstance then
                 local gameStateData = gameInstance:getGameState()

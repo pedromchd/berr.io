@@ -1,7 +1,5 @@
--- Configuration and Constants
 local config = {}
 
--- Cores
 config.colors = {
     background = {0.08, 0.08, 0.08},
     title = {1, 1, 1},
@@ -15,29 +13,28 @@ config.colors = {
     text = {0.9, 0.9, 0.9}
 }
 
--- Teclado virtual
 config.keyboardLayout = {
     {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"},
     {"A", "S", "D", "F", "G", "H", "J", "K", "L"},
     {"←", "Z", "X", "C", "V", "B", "N", "M", "ENTER"}
 }
 
--- Função para criar botões do menu principal
+-- Cria botões do menu principal
 function config.createMenuButtons()
     return {
         {
             text = "Jogar",
-            relativeY = 0.475, -- porcentagem da altura da tela
+            relativeY = 0.475,
             action = function(changeState) changeState("difficulty") end
         }, {
             text = "Como Jogar",
-            relativeY = 0.625, -- porcentagem da altura da tela
+            relativeY = 0.625,
             action = function(changeState) changeState("instructions") end
         }
     }
 end
 
--- Função para criar botões da tela de dificuldade
+-- Cria botões da seleção de dificuldade
 function config.createDifficultyButtons(initGame)
     return {
         {
@@ -65,7 +62,7 @@ function config.createDifficultyButtons(initGame)
     }
 end
 
--- Estados que permitem voltar
+-- Estados que permitem voltar ao menu
 config.backStates = {
     instructions = true,
     difficulty = true,

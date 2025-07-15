@@ -1,48 +1,44 @@
--- Utility Functions for screen handling, button management, etc.
--- TODO: Add unit tests to cover scaling, button centering, and grid dimension calculations
 local utils = {}
 
--- Função para atualizar dimensões da tela
+-- Atualiza dimensões da tela
 function utils.updateScreenDimensions() return love.graphics.getWidth(), love.graphics.getHeight() end
 
--- Funções de escala responsiva
-function utils.getScaleX(screenWidth)
-    return screenWidth / 1100 -- baseado na largura original
-end
+-- Calcula escala horizontal
+function utils.getScaleX(screenWidth) return screenWidth / 1100 end
 
-function utils.getScaleY(screenHeight)
-    return screenHeight / 800 -- baseado na altura original
-end
+-- Calcula escala vertical
+function utils.getScaleY(screenHeight) return screenHeight / 800 end
 
+-- Calcula escala responsiva mantendo proporção
 function utils.getScale(screenWidth, screenHeight)
-    return math.min(utils.getScaleX(screenWidth), utils.getScaleY(screenHeight)) -- mantém proporção
+    return math.min(utils.getScaleX(screenWidth), utils.getScaleY(screenHeight))
 end
 
--- Função para calcular dimensões da grade responsivamente
+-- Calcula dimensões da grade padrão
 function utils.getGridDimensions(screenWidth, screenHeight)
     local scale = utils.getScale(screenWidth, screenHeight)
     return {boxSize = math.floor(60 * scale), spacing = math.floor(10 * scale)}
 end
 
--- Função para dimensões da grade no modo fácil (maior)
+-- Calcula dimensões da grade no modo fácil
 function utils.getGridDimensionsEasy(screenWidth, screenHeight)
     local scale = utils.getScale(screenWidth, screenHeight)
     return {boxSize = math.floor(70 * scale), spacing = math.floor(12 * scale)}
 end
 
--- Função para dimensões da grade no modo médio (maior)
+-- Calcula dimensões da grade no modo médio
 function utils.getGridDimensionsMedium(screenWidth, screenHeight)
     local scale = utils.getScale(screenWidth, screenHeight)
     return {boxSize = math.floor(70 * scale), spacing = math.floor(11 * scale)}
 end
 
--- Função para dimensões da grade no modo difícil (tamanho original)
+-- Calcula dimensões da grade no modo difícil
 function utils.getGridDimensionsHard(screenWidth, screenHeight)
     local scale = utils.getScale(screenWidth, screenHeight)
     return {boxSize = math.floor(60 * scale), spacing = math.floor(10 * scale)}
 end
 
--- Função para calcular área de conteúdo centralizada
+-- Calcula área de conteúdo centralizada
 function utils.getContentArea(screenWidth, screenHeight)
     local maxContentWidth = 1100
     local maxContentHeight = 800
@@ -57,7 +53,7 @@ function utils.getContentArea(screenWidth, screenHeight)
     return {x = offsetX, y = offsetY, width = contentWidth, height = contentHeight, scale = scale}
 end
 
--- Função para recarregar fontes com escala
+-- Carrega fontes com escala adequada
 function utils.loadFonts(screenWidth, screenHeight)
     local scale = utils.getScale(screenWidth, screenHeight)
 
@@ -78,19 +74,18 @@ function utils.loadFonts(screenWidth, screenHeight)
     return titleFont, difficultyTitleFont, buttonFont, textFont
 end
 
--- Função para calcular dimensões dos botões responsivamente
+-- Calcula dimensões dos botões
 function utils.getButtonDimensions(screenWidth, screenHeight)
     local scale = utils.getScale(screenWidth, screenHeight)
     return {width = math.floor(350 * scale), height = math.floor(100 * scale)}
 end
 
--- Função para centralizar botões responsivamente
+-- Centraliza botões na tela
 function utils.centerButtons(buttons, screenWidth, screenHeight)
     local buttonDim = utils.getButtonDimensions(screenWidth, screenHeight)
     local content = utils.getContentArea(screenWidth, screenHeight)
 
     for _, button in ipairs(buttons) do
-        -- Store the original percentage if not already present
         if not button.relativeY and button.y then button.relativeY = button.y end
         button.x = content.x + (content.width - buttonDim.width) / 2
         button.width = buttonDim.width
@@ -99,7 +94,7 @@ function utils.centerButtons(buttons, screenWidth, screenHeight)
     end
 end
 
--- Função para detectar clique no teclado virtual
+-- Detecta cliques no teclado virtual
 function utils.getVirtualKeyPressed(mouseX, mouseY, gameState, keyboardLayout, screenWidth,
                                     screenHeight)
     local content = utils.getContentArea(screenWidth, screenHeight)
@@ -161,6 +156,7 @@ function utils.getVirtualKeyPressed(mouseX, mouseY, gameState, keyboardLayout, s
     return nil
 end
 
+-- Verifica se um ponto está dentro de um retângulo
 function utils.isPointInRect(px, py, rx, ry, rw, rh)
     return px >= rx and px <= rx + rw and py >= ry and py <= ry + rh
 end
