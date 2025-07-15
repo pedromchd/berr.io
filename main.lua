@@ -1,9 +1,22 @@
 -- Menu berr.io com tela de instruções
 local menu = {}
+local Berrio = require("libraries.berrio")
 
 -- Estados da tela
 local gameState = "menu" -- "menu", "instructions", "difficulty", "game"
 local bounceTime = 0
+
+-- Instâncias do jogo
+local gameInstances = {easy = nil, medium = {}, hard = {}}
+
+-- Estado do jogo atual
+local currentInput = ""
+local currentRow = 1
+local currentCol = 1
+local showingMessage = false
+local messageText = ""
+local messageTime = 0
+local messageColor = "text"
 
 -- Configurações da tela
 local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
@@ -55,9 +68,28 @@ local menuButtons = {
 
 -- Botões da tela de dificuldade (centralizados automaticamente)
 local difficultyButtons = {
-    {text = "Fácil", relativeY = 0.3125, action = function() gameState = "game" end},
-    {text = "Médio", relativeY = 0.5, action = function() gameState = "game_medium" end},
-    {text = "Difícil", relativeY = 0.6875, action = function() gameState = "game_hard" end}
+    {
+        text = "Fácil",
+        relativeY = 0.3125,
+        action = function()
+            gameState = "game"
+            initGame("easy")
+        end
+    }, {
+        text = "Médio",
+        relativeY = 0.5,
+        action = function()
+            gameState = "game_medium"
+            initGame("medium")
+        end
+    }, {
+        text = "Difícil",
+        relativeY = 0.6875,
+        action = function()
+            gameState = "game_hard"
+            initGame("hard")
+        end
+    }
 }
 
 local backStates = {
@@ -181,9 +213,102 @@ function love.load()
     centerButtons(difficultyButtons)
 end
 
+-- Função para inicializar o jogo
+function initGame(difficulty)
+    if difficulty == "easy" then
+        gameInstances.easy = Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv")
+    elseif difficulty == "medium" then
+        gameInstances.medium = {
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv"),
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv")
+        }
+    elseif difficulty == "hard" then
+        gameInstances.hard = {
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv"),
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv"),
+            Berrio:new("assets/valid_answers.csv", "assets/valid_guesses.csv")
+        }
+    end
+
+    -- Reset input state
+    currentInput = ""
+    currentRow = 1
+    currentCol = 1
+    showingMessage = false
+    messageText = ""
+    messageTime = 0
+end
+
+-- Função para obter a instância do jogo atual
+function getCurrentGameInstance(gridIndex)
+    gridIndex = gridIndex or 1
+    if gameState == "game" then
+        return gameInstances.easy
+    elseif gameState == "game_medium" then
+        return gameInstances.medium[gridIndex]
+    elseif gameState == "game_hard" then
+        return gameInstances.hard[gridIndex]
+    end
+    return nil
+end
+
+-- Função para processar entrada de tecla
+function processKeyInput(key)
+    if showingMessage then return end
+
+    local currentGame = getCurrentGameInstance()
+    if not currentGame or currentGame.gameOver then return end
+
+    if key == "backspace" or key == "←" then
+        if #currentInput > 0 then
+            currentInput = currentInput:sub(1, -2)
+            currentCol = math.max(1, currentCol - 1)
+        end
+    elseif key == "return" or key == "enter" or key == "ENTER" then
+        if #currentInput == 5 then
+            local result = currentGame:makeGuess(currentInput)
+            if result.success then
+                currentRow = currentRow + 1
+                currentInput = ""
+                currentCol = 1
+
+                if result.gameOver then
+                    if result.won then
+                        showMessage("Parabéns! Você acertou!", "green", 3)
+                    else
+                        showMessage("Fim de jogo! A palavra era: " ..
+                                        currentGame.currentAnswer:upper(), "red", 5)
+                    end
+                end
+            else
+                showMessage(result.message, "red", 2)
+            end
+        else
+            showMessage("Digite uma palavra de 5 letras", "yellow", 2)
+        end
+    elseif key:match("^%a$") and #currentInput < 5 then
+        currentInput = currentInput .. key:upper()
+        currentCol = currentCol + 1
+    end
+end
+
+-- Função para mostrar mensagem temporária
+function showMessage(text, color, duration)
+    messageText = text
+    messageColor = color
+    messageTime = duration
+    showingMessage = true
+end
+
 function love.update(dt)
     local mouseX, mouseY = love.mouse.getPosition()
     bounceTime = bounceTime + dt
+
+    -- Atualizar timer de mensagem
+    if showingMessage then
+        messageTime = messageTime - dt
+        if messageTime <= 0 then showingMessage = false end
+    end
 
     if gameState == "menu" then
         for _, button in ipairs(menuButtons) do
@@ -422,20 +547,87 @@ function drawDifficulty()
 end
 
 -- Função auxiliar para desenhar uma grade em uma posição específica com linhas e colunas definidas
-function drawGridAt(startX, startY, rows, cols, gridDimensions)
+function drawGridAt(startX, startY, rows, cols, gridDimensions, gameInstance)
     local grid = gridDimensions or getGridDimensions()
+    local gameState = gameInstance and gameInstance:getGameState() or nil
+
     for row = 0, rows - 1 do
         for col = 0, cols - 1 do
             local x = startX + col * (grid.boxSize + grid.spacing)
             local y = startY + row * (grid.boxSize + grid.spacing)
-            love.graphics.setColor(0.2, 0.2, 0.2)
+
+            -- Determinar cor da caixa
+            local boxColor = {0.2, 0.2, 0.2}
+            local textColor = colors.buttonText
+            local letter = ""
+
+            if gameState then
+                local attemptIndex = row + 1
+                local letterIndex = col + 1
+
+                if attemptIndex <= #gameState.attempts then
+                    -- Tentativa já feita
+                    local attempt = gameState.attempts[attemptIndex]
+                    letter = attempt.word:sub(letterIndex, letterIndex):upper()
+
+                    local letterResult = attempt.result.letters[letterIndex]
+                    if letterResult == true then
+                        boxColor = colors.green
+                    elseif letterResult == false then
+                        boxColor = colors.yellow
+                    else
+                        boxColor = colors.red
+                    end
+                elseif attemptIndex == currentRow and gameInstance == getCurrentGameInstance() then
+                    -- Linha atual sendo digitada
+                    if letterIndex <= #currentInput then
+                        letter = currentInput:sub(letterIndex, letterIndex)
+                        boxColor = {0.3, 0.3, 0.3}
+                    end
+                end
+            end
+
+            love.graphics.setColor(boxColor)
             love.graphics.rectangle("fill", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
                                     4 * getScale())
             love.graphics.setColor(colors.border)
             love.graphics.rectangle("line", x, y, grid.boxSize, grid.boxSize, 4 * getScale(),
                                     4 * getScale())
+
+            -- Desenhar letra
+            if letter ~= "" then
+                love.graphics.setFont(buttonFont)
+                love.graphics.setColor(textColor)
+                local letterWidth = buttonFont:getWidth(letter)
+                local letterHeight = buttonFont:getHeight()
+                local letterX = x + (grid.boxSize - letterWidth) / 2
+                local letterY = y + (grid.boxSize - letterHeight) / 2
+                love.graphics.print(letter, letterX, letterY)
+            end
         end
     end
+end
+
+-- Função para desenhar mensagem
+function drawMessage()
+    if not showingMessage then return end
+
+    local content = getContentArea()
+    love.graphics.setFont(buttonFont)
+    love.graphics.setColor(colors[messageColor] or colors.text)
+
+    local textWidth = buttonFont:getWidth(messageText)
+    local textHeight = buttonFont:getHeight()
+    local x = (content.width - textWidth) / 2
+    local y = content.height * 0.85
+
+    -- Fundo da mensagem
+    love.graphics.setColor(0, 0, 0, 0.8)
+    love.graphics.rectangle("fill", x - 20, y - 10, textWidth + 40, textHeight + 20, 10)
+
+    -- Texto da mensagem
+    love.graphics.setColor(colors[messageColor] or colors.text)
+    love.graphics.print(messageText, x, y)
 end
 
 function drawGameEasy()
@@ -457,10 +649,13 @@ function drawGameEasy()
     local startX = (content.width - gridWidth) / 2
     local startY = content.height * 0.12
 
-    drawGridAt(startX, startY-15, 6, 5, grid)
+    drawGridAt(startX, startY - 15, 6, 5, grid, gameInstances.easy)
 
     -- Teclado virtual
     drawVirtualKeyboard()
+
+    -- Mensagem
+    drawMessage()
 end
 
 function drawGameMid()
@@ -485,11 +680,14 @@ function drawGameMid()
     local startX2 = startX1 + gridWidth + gridSeparation
     local startY = content.height * 0.12
 
-    drawGridAt(startX1, startY-15, 6, 5, grid)
-    drawGridAt(startX2, startY-15, 6, 5, grid)
+    drawGridAt(startX1, startY - 15, 6, 5, grid, gameInstances.medium[1])
+    drawGridAt(startX2, startY - 15, 6, 5, grid, gameInstances.medium[2])
 
     -- Teclado virtual abaixo das grades
     drawVirtualKeyboard()
+
+    -- Mensagem
+    drawMessage()
 end
 
 function drawGameHard()
@@ -517,12 +715,15 @@ function drawGameHard()
 
     local startY = content.height * 0.12
 
-    drawGridAt(startX1, startY-15, 6, 5, grid)
-    drawGridAt(startX2, startY-15, 6, 5, grid)
-    drawGridAt(startX3, startY-15, 6, 5, grid)
+    drawGridAt(startX1, startY - 15, 6, 5, grid, gameInstances.hard[1])
+    drawGridAt(startX2, startY - 15, 6, 5, grid, gameInstances.hard[2])
+    drawGridAt(startX3, startY - 15, 6, 5, grid, gameInstances.hard[3])
 
     -- Teclado virtual maior para o modo difícil
     drawVirtualKeyboardHard()
+
+    -- Mensagem
+    drawMessage()
 end
 
 function drawVirtualKeyboard()
@@ -643,8 +844,76 @@ function love.mousepressed(x, y, button)
                     break
                 end
             end
+        elseif gameState == "game" or gameState == "game_medium" or gameState == "game_hard" then
+            -- Verificar cliques no teclado virtual
+            local keyPressed = getVirtualKeyPressed(x, y)
+            if keyPressed then
+                love.audio.play(clickSound)
+                processKeyInput(keyPressed)
+            end
         end
     end
+end
+
+-- Função para detectar clique no teclado virtual
+function getVirtualKeyPressed(mouseX, mouseY)
+    local content = getContentArea()
+    local scale = getScale()
+    local keyHeight, keyWidth, enterWidth, spacing, startY
+
+    if gameState == "game_hard" then
+        keyHeight = math.floor(85 * scale)
+        keyWidth = math.floor(75 * scale)
+        enterWidth = math.floor(180 * scale)
+        spacing = math.floor(15 * scale)
+        startY = content.y + content.height * 0.63
+    else
+        keyHeight = math.floor(70 * scale)
+        keyWidth = math.floor(60 * scale)
+        enterWidth = math.floor(150 * scale)
+        spacing = math.floor(12 * scale)
+        startY = content.y + content.height * 0.70
+    end
+
+    local enterExtraMargin = math.floor(30 * scale)
+
+    for rowIndex, row in ipairs(keyboardLayout) do
+        local totalWidth = 0
+        for _, key in ipairs(row) do
+            if key == "ENTER" then
+                totalWidth = totalWidth + enterWidth + enterExtraMargin
+            else
+                totalWidth = totalWidth + keyWidth
+            end
+            totalWidth = totalWidth + spacing
+        end
+        totalWidth = totalWidth - spacing
+
+        local startX = content.x + (content.width - totalWidth) / 2
+        local x = startX
+
+        for _, key in ipairs(row) do
+            local thisKeyWidth = (key == "ENTER") and enterWidth or keyWidth
+            local margin = (key == "ENTER") and enterExtraMargin or 0
+
+            x = x + margin
+            local y = startY + (rowIndex - 1) * (keyHeight + spacing)
+
+            if isPointInRect(mouseX, mouseY, x, y, thisKeyWidth, keyHeight) then
+                if key == "←" then
+                    return "backspace"
+                elseif key == "ENTER" then
+                    return "return"
+                else
+                    return key:lower()
+                end
+            end
+
+            x = x + thisKeyWidth + spacing
+        end
+    end
+
+    return nil
 end
 
 function love.keypressed(key)
@@ -654,6 +923,8 @@ function love.keypressed(key)
         else
             love.event.quit()
         end
+    elseif gameState == "game" or gameState == "game_medium" or gameState == "game_hard" then
+        processKeyInput(key)
     end
 end
 
