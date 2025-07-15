@@ -1,53 +1,46 @@
 Berrio = {}
 Berrio.__index = Berrio
 
+-- Cria nova instância do jogo
 function Berrio:new(answersFile, validGuessesFile)
     local self = setmetatable({}, Berrio)
 
-    -- Configurações
     self.maxAttempts = 6
     self.wordLength = 5
 
-    -- Dados carregados
-    self.answers = {} -- Set de palavras que podem ser sorteadas
-    self.validGuesses = {} -- Set de todas as palavras válidas
+    self.answers = {}
+    self.validGuesses = {}
 
-    -- Estado do jogo
     self.currentAnswer = ""
-    self.attempts = {} -- Histórico de tentativas
+    self.attempts = {}
     self.gameOver = false
     self.won = false
 
-    -- Carregar dados
     self:loadWords(answersFile, validGuessesFile)
     self:selectRandomAnswer()
 
     return self
 end
 
+-- Carrega palavras dos arquivos CSV
 function Berrio:loadWords(answersFile, validGuessesFile)
-    -- Carrega respostas válidas
     self.answers = self:loadCSVToSet(answersFile)
-
-    -- Carrega tentativas válidas
     self.validGuesses = self:loadCSVToSet(validGuessesFile)
 
-    -- Adiciona answers às valid words
     for word in pairs(self.answers) do self.validGuesses[word] = true end
 end
 
+-- Carrega palavras de arquivo CSV para uma tabela
 function Berrio:loadCSVToSet(filename)
     local wordSet = {}
     local file = io.open(filename, "r")
 
     if not file then error("Não foi possível abrir o arquivo: " .. filename) end
 
-    -- Pula cabeçalho
     local _ = file:read("*line")
 
-    -- Lê palavras
     for line in file:lines() do
-        local word = line:match("^%s*(.-)%s*$") -- Remove espaços
+        local word = line:match("^%s*(.-)%s*$")
         if word and #word == self.wordLength then wordSet[word:lower()] = true end
     end
 
@@ -55,6 +48,7 @@ function Berrio:loadCSVToSet(filename)
     return wordSet
 end
 
+-- Seleciona palavra aleatória para resposta
 function Berrio:selectRandomAnswer()
     local answers = {}
     for word in pairs(self.answers) do table.insert(answers, word) end
@@ -66,50 +60,48 @@ function Berrio:selectRandomAnswer()
     end
 end
 
+-- Verifica se palavra é válida
 function Berrio:isvalidGuess(word) return self.validGuesses[word:lower()] ~= nil end
 
+-- Compara tentativa com resposta correta
 function Berrio:checkMatch(guess)
     guess = guess:lower()
     local answer = self.currentAnswer
     local result = {}
 
-    -- Contador de letras disponíveis na resposta
     local letterCount = {}
     for i = 1, #answer do
         local letter = answer:sub(i, i)
         letterCount[letter] = (letterCount[letter] or 0) + 1
     end
 
-    -- Primeira passada: marcar posições exatas
     for i = 1, #guess do
         local guessLetter = guess:sub(i, i)
         local answerLetter = answer:sub(i, i)
 
         if guessLetter == answerLetter then
-            result[i] = true -- Posição correta
+            result[i] = true
             letterCount[guessLetter] = letterCount[guessLetter] - 1
         else
-            result[i] = nil -- Placeholder
+            result[i] = nil
         end
     end
 
-    -- Segunda passada: marcar posições parciais
     for i = 1, #guess do
-        if result[i] == nil then -- Não foi marcada como exata
+        if result[i] == nil then
             local guessLetter = guess:sub(i, i)
 
             if letterCount[guessLetter] and letterCount[guessLetter] > 0 then
-                result[i] = false -- Letra certa, posição errada
+                result[i] = false
                 letterCount[guessLetter] = letterCount[guessLetter] - 1
             else
-                result[i] = nil -- Letra não existe ou já foi usada
+                result[i] = nil
             end
         end
     end
 
-    -- Verifica se é match perfeito - deve verificar todas as 5 posições
     local perfectMatch = true
-    for i = 1, 5 do -- Forçar verificação de todas as 5 posições
+    for i = 1, 5 do
         if result[i] ~= true then
             perfectMatch = false
             break
@@ -119,6 +111,7 @@ function Berrio:checkMatch(guess)
     return {perfect = perfectMatch, letters = result}
 end
 
+-- Faz uma tentativa de adivinhação
 function Berrio:makeGuess(word)
     if self.gameOver then return {success = false, message = "Jogo já terminou"} end
 
@@ -136,13 +129,10 @@ function Berrio:makeGuess(word)
         return {success = false, message = "Palavra não está na lista"}
     end
 
-    -- Verifica match
     local match = self:checkMatch(word)
 
-    -- Adiciona ao histórico
     table.insert(self.attempts, {word = word, result = match})
 
-    -- Verifica fim de jogo
     if match.perfect then
         self.gameOver = true
         self.won = true
@@ -154,6 +144,7 @@ function Berrio:makeGuess(word)
     return {success = true, match = match, gameOver = self.gameOver, won = self.won}
 end
 
+-- Retorna estado atual do jogo
 function Berrio:getGameState()
     return {
         attempts = self.attempts,
@@ -165,6 +156,7 @@ function Berrio:getGameState()
     }
 end
 
+-- Reinicia jogo
 function Berrio:reset()
     self.attempts = {}
     self.gameOver = false
