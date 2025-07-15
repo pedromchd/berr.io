@@ -107,9 +107,9 @@ function Berrio:checkMatch(guess)
         end
     end
 
-    -- Verifica se é match perfeito
+    -- Verifica se é match perfeito - deve verificar todas as 5 posições
     local perfectMatch = true
-    for i = 1, #result do
+    for i = 1, 5 do -- Forçar verificação de todas as 5 posições
         if result[i] ~= true then
             perfectMatch = false
             break
