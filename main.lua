@@ -8,62 +8,16 @@ local bounceTime = 0
 -- Configurações da tela
 local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
 
--- Função para atualizar dimensões da tela
-function updateScreenDimensions()
-    screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
-end
-
--- Funções de escala responsiva
-function getScaleX()
-    return screenWidth / 1100 -- baseado na largura original
-end
-
-function getScaleY()
-    return screenHeight / 800 -- baseado na altura original
-end
-
-function getScale()
-    return math.min(getScaleX(), getScaleY()) -- mantém proporção
-end
-
--- Função para calcular área de conteúdo centralizada
-function getContentArea()
-    local maxContentWidth = 1100
-    local maxContentHeight = 800
-    local scale = getScale()
-
-    local contentWidth = math.min(screenWidth, maxContentWidth * scale)
-    local contentHeight = math.min(screenHeight, maxContentHeight * scale)
-
-    local offsetX = (screenWidth - contentWidth) / 2
-    local offsetY = (screenHeight - contentHeight) / 2
-
-    return {x = offsetX, y = offsetY, width = contentWidth, height = contentHeight, scale = scale}
-end
-
 -- Imagem de fundo
 local backgroundImage
 
 -- Fontes responsivas
 local titleFontSize = 60
 local difficultyTitleFontSize = 40
-local buttonFontSize = 25
-local textFontSize = 15
+local buttonFontSize = 30
+local textFontSize = 18
 
 local titleFont, difficultyTitleFont, buttonFont, textFont
-
--- Função para recarregar fontes com escala
-function loadFonts()
-    local scale = getScale()
-    titleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
-                                      math.floor(titleFontSize * scale))
-    difficultyTitleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
-                                                math.floor(difficultyTitleFontSize * scale))
-    buttonFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
-                                       math.floor(buttonFontSize * scale))
-    textFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
-                                     math.floor(textFontSize * scale))
-end
 
 -- Cores
 local colors = {
@@ -86,12 +40,6 @@ local keyboardLayout = {
     {"←", "Z", "X", "C", "V", "B", "N", "M", "ENTER"}
 }
 
--- Função para calcular dimensões dos botões responsivamente
-function getButtonDimensions()
-    local scale = getScale()
-    return {width = math.floor(300 * scale), height = math.floor(80 * scale)}
-end
-
 -- Botões do menu principal (centralizados automaticamente)
 local menuButtons = {
     {
@@ -111,6 +59,97 @@ local difficultyButtons = {
     {text = "Médio", relativeY = 0.5, action = function() gameState = "game_medium" end},
     {text = "Difícil", relativeY = 0.6875, action = function() gameState = "game_hard" end}
 }
+
+local backStates = {
+    instructions = true,
+    difficulty = true,
+    game = true,
+    game_medium = true,
+    game_hard = true
+}
+
+-- Função para atualizar dimensões da tela
+function updateScreenDimensions()
+    screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
+end
+
+-- Funções de escala responsiva
+function getScaleX()
+    return screenWidth / 1100 -- baseado na largura original
+end
+
+function getScaleY()
+    return screenHeight / 800 -- baseado na altura original
+end
+
+function getScale()
+    return math.min(getScaleX(), getScaleY()) -- mantém proporção
+end
+
+-- Função para calcular dimensões da grade responsivamente
+function getGridDimensions()
+    local scale = getScale()
+    return {boxSize = math.floor(60 * scale), spacing = math.floor(10 * scale)}
+end
+
+-- Função para dimensões da grade no modo fácil (maior)
+function getGridDimensionsEasy()
+    local scale = getScale()
+    return {boxSize = math.floor(70 * scale), spacing = math.floor(12 * scale)}
+end
+
+-- Função para dimensões da grade no modo médio (maior)
+function getGridDimensionsMedium()
+    local scale = getScale()
+    return {boxSize = math.floor(70 * scale), spacing = math.floor(11 * scale)}
+end
+
+-- Função para dimensões da grade no modo difícil (tamanho original)
+function getGridDimensionsHard()
+    local scale = getScale()
+    return {boxSize = math.floor(60 * scale), spacing = math.floor(10 * scale)}
+end
+
+-- Função para calcular área de conteúdo centralizada
+function getContentArea()
+    local maxContentWidth = 1100
+    local maxContentHeight = 800
+    local scale = getScale()
+
+    local contentWidth = math.min(screenWidth, maxContentWidth * scale)
+    local contentHeight = math.min(screenHeight, maxContentHeight * scale)
+
+    local offsetX = (screenWidth - contentWidth) / 2
+    local offsetY = (screenHeight - contentHeight) / 2
+
+    return {x = offsetX, y = offsetY, width = contentWidth, height = contentHeight, scale = scale}
+end
+
+-- Função para recarregar fontes com escala
+function loadFonts()
+    local scale = getScale()
+    titleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                      math.floor(titleFontSize * scale))
+    difficultyTitleFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                                math.floor(difficultyTitleFontSize * scale))
+    buttonFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                       math.floor(buttonFontSize * scale))
+    textFont = love.graphics.newFont("assets/PressStart2P-Regular.ttf",
+                                     math.floor(textFontSize * scale))
+end
+
+-- Função para calcular dimensões dos botões responsivamente
+function getButtonDimensions()
+    local scale = getScale()
+    return {width = math.floor(350 * scale), height = math.floor(100 * scale)}
+end
+
+function love.resize(w, h)
+    updateScreenDimensions()
+    loadFonts()
+    centerButtons(menuButtons)
+    centerButtons(difficultyButtons)
+end
 
 -- Função para centralizar botões responsivamente
 function centerButtons(buttons)
@@ -138,13 +177,6 @@ function love.load()
     loadFonts()
 
     -- Centralizar todos os botões
-    centerButtons(menuButtons)
-    centerButtons(difficultyButtons)
-end
-
-function love.resize(w, h)
-    updateScreenDimensions()
-    loadFonts()
     centerButtons(menuButtons)
     centerButtons(difficultyButtons)
 end
@@ -187,11 +219,11 @@ function love.draw()
     elseif gameState == "difficulty" then
         drawDifficulty()
     elseif gameState == "game" then
-        drawGameFacil()
+        drawGameEasy()
     elseif gameState == "game_medium" then
-        drawGameMedio()
+        drawGameMid()
     elseif gameState == "game_hard" then
-        drawGameDificil()
+        drawGameHard()
     end
 
     love.graphics.pop()
@@ -204,7 +236,7 @@ function drawMenu()
     love.graphics.setFont(textFont)
     local text = "Trabalho final da disciplina de LP, feito em LOVE2D. ®"
     local textWidth = textFont:getWidth(text)
-    love.graphics.print(text, (content.width - textWidth) / 2, content.height * 0.8375)
+    love.graphics.print(text, (content.width - textWidth) / 2, content.height * 0.9500)
 
     love.graphics.setFont(titleFont)
     local titleText = "berr.io"
@@ -316,11 +348,11 @@ function drawInstructions()
         end
 
         -- Adicionar espaço extra após certas instruções
-        if i == 1 or i == 2 or i == 3 then currentY = currentY + lineHeight * 0.3 end
+        if i == 1 or i == 2 or i == 3 then currentY = currentY + lineHeight * 1.5 end
     end
 
     -- Seção de exemplos mais abaixo
-    local examplesY = content.height * 0.65
+    local examplesY = content.height * 0.72
     love.graphics.setColor(colors.text)
     local examplesTitle = "Exemplos:"
     local examplesTitleWidth = textFont:getWidth(examplesTitle)
@@ -335,14 +367,14 @@ function drawInstructions()
     love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(), exampleStartY, squareSize,
                             squareSize)
     love.graphics.setColor(colors.text)
-    love.graphics.print("Posição correta", exampleCenterX - 100 * getScale(), exampleStartY + 2)
+    love.graphics.print("Posição correta", exampleCenterX - 120 * getScale(), exampleStartY + 2)
 
     -- Exemplo Amarelo
     love.graphics.setColor(colors.yellow)
     love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(),
                             exampleStartY + squareSize * 1.8, squareSize, squareSize)
     love.graphics.setColor(colors.text)
-    love.graphics.print("Posição errada", exampleCenterX - 100 * getScale(),
+    love.graphics.print("Posição errada", exampleCenterX - 120 * getScale(),
                         exampleStartY + squareSize * 1.8 + 2)
 
     -- Exemplo Vermelho
@@ -350,14 +382,14 @@ function drawInstructions()
     love.graphics.rectangle("fill", exampleCenterX - 150 * getScale(),
                             exampleStartY + squareSize * 3.6, squareSize, squareSize)
     love.graphics.setColor(colors.text)
-    love.graphics.print("Não está na palavra", exampleCenterX - 100 * getScale(),
+    love.graphics.print("Não está na palavra", exampleCenterX - 120 * getScale(),
                         exampleStartY + squareSize * 3.6 + 2)
 
     -- Instrução para voltar
     love.graphics.setColor(colors.text)
     local backText = "Pressione ESC para voltar"
     local backTextWidth = textFont:getWidth(backText)
-    love.graphics.print(backText, (content.width - backTextWidth) / 2, content.height * 0.9)
+    love.graphics.print(backText, (content.width - backTextWidth) / 2, content.height * 0.94)
 end
 
 function drawDifficulty()
@@ -389,15 +421,9 @@ function drawDifficulty()
     end
 end
 
--- Função para calcular dimensões da grade responsivamente
-function getGridDimensions()
-    local scale = getScale()
-    return {boxSize = math.floor(60 * scale), spacing = math.floor(10 * scale)}
-end
-
--- Helper function to draw a grid at a given position with specified rows and columns
-function drawGridAt(startX, startY, rows, cols)
-    local grid = getGridDimensions()
+-- Função auxiliar para desenhar uma grade em uma posição específica com linhas e colunas definidas
+function drawGridAt(startX, startY, rows, cols, gridDimensions)
+    local grid = gridDimensions or getGridDimensions()
     for row = 0, rows - 1 do
         for col = 0, cols - 1 do
             local x = startX + col * (grid.boxSize + grid.spacing)
@@ -412,54 +438,75 @@ function drawGridAt(startX, startY, rows, cols)
     end
 end
 
-function drawGameFacil()
+function drawGameEasy()
     local content = getContentArea()
+
+    -- Título "berr.io" no topo
+    love.graphics.setFont(difficultyTitleFont)
+    love.graphics.setColor(colors.title)
+    local titleText = "berr.io"
+    local titleWidth = difficultyTitleFont:getWidth(titleText)
+    love.graphics.print(titleText, (content.width - titleWidth) / 2, content.height * 0.02)
 
     love.graphics.setFont(buttonFont)
     love.graphics.setColor(colors.text)
 
-    -- Grade 6x5 (centralizada)
-    local grid = getGridDimensions()
+    -- Grade 6x5 (centralizada) - tamanho maior
+    local grid = getGridDimensionsEasy()
     local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
     local startX = (content.width - gridWidth) / 2
-    local startY = content.height * 0.08
+    local startY = content.height * 0.12
 
-    drawGridAt(startX, startY, 6, 5)
+    drawGridAt(startX, startY-15, 6, 5, grid)
 
     -- Teclado virtual
     drawVirtualKeyboard()
 end
 
-function drawGameMedio()
+function drawGameMid()
     local content = getContentArea()
+
+    -- Título "berr.io" no topo
+    love.graphics.setFont(difficultyTitleFont)
+    love.graphics.setColor(colors.title)
+    local titleText = "berr.io"
+    local titleWidth = difficultyTitleFont:getWidth(titleText)
+    love.graphics.print(titleText, (content.width - titleWidth) / 2, content.height * 0.02)
 
     love.graphics.setFont(buttonFont)
     love.graphics.setColor(colors.text)
 
-    -- Duas grades 6x5 lado a lado
-    local grid = getGridDimensions()
+    -- Duas grades 6x5 lado a lado - tamanho médio
+    local grid = getGridDimensionsMedium()
     local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
     local gridSeparation = math.floor(40 * getScale())
     local totalWidth = gridWidth * 2 + gridSeparation
     local startX1 = (content.width - totalWidth) / 2
     local startX2 = startX1 + gridWidth + gridSeparation
-    local startY = content.height * 0.08
+    local startY = content.height * 0.12
 
-    drawGridAt(startX1, startY, 6, 5)
-    drawGridAt(startX2, startY, 6, 5)
+    drawGridAt(startX1, startY-15, 6, 5, grid)
+    drawGridAt(startX2, startY-15, 6, 5, grid)
 
     -- Teclado virtual abaixo das grades
     drawVirtualKeyboard()
 end
 
-function drawGameDificil()
+function drawGameHard()
     local content = getContentArea()
+
+    -- Título "berr.io" no topo
+    love.graphics.setFont(difficultyTitleFont)
+    love.graphics.setColor(colors.title)
+    local titleText = "berr.io"
+    local titleWidth = difficultyTitleFont:getWidth(titleText)
+    love.graphics.print(titleText, (content.width - titleWidth) / 2, content.height * 0.02)
 
     love.graphics.setFont(buttonFont)
     love.graphics.setColor(colors.text)
 
-    -- Três grades 6x5 lado a lado
-    local grid = getGridDimensions()
+    -- Três grades 6x5 lado a lado - tamanho original (menor)
+    local grid = getGridDimensionsHard()
     local gridWidth = 5 * grid.boxSize + 4 * grid.spacing
     local spacingBetweenGrids = math.floor(30 * getScale())
     local totalWidth = gridWidth * 3 + spacingBetweenGrids * 2
@@ -468,15 +515,16 @@ function drawGameDificil()
     local startX2 = startX1 + gridWidth + spacingBetweenGrids
     local startX3 = startX2 + gridWidth + spacingBetweenGrids
 
-    local startY = content.height * 0.08
+    local startY = content.height * 0.12
 
-    drawGridAt(startX1, startY, 6, 5)
-    drawGridAt(startX2, startY, 6, 5)
-    drawGridAt(startX3, startY, 6, 5)
+    drawGridAt(startX1, startY-15, 6, 5, grid)
+    drawGridAt(startX2, startY-15, 6, 5, grid)
+    drawGridAt(startX3, startY-15, 6, 5, grid)
 
-    -- Teclado virtual
-    drawVirtualKeyboard()
+    -- Teclado virtual maior para o modo difícil
+    drawVirtualKeyboardHard()
 end
+
 function drawVirtualKeyboard()
     local content = getContentArea()
     local scale = getScale()
@@ -485,7 +533,57 @@ function drawVirtualKeyboard()
     local enterWidth = math.floor(150 * scale)
     local spacing = math.floor(12 * scale)
     local enterExtraMargin = math.floor(30 * scale)
-    local startY = content.height * 0.62 -- posicionamento responsivo
+    local startY = content.height * 0.70 -- posicionamento responsivo
+
+    for rowIndex, row in ipairs(keyboardLayout) do
+        local totalWidth = 0
+        for _, key in ipairs(row) do
+            if key == "ENTER" then
+                totalWidth = totalWidth + enterWidth + enterExtraMargin
+            else
+                totalWidth = totalWidth + keyWidth
+            end
+            totalWidth = totalWidth + spacing
+        end
+        totalWidth = totalWidth - spacing
+
+        local startX = (content.width - totalWidth) / 2
+        local x = startX
+
+        for _, key in ipairs(row) do
+            local thisKeyWidth = (key == "ENTER") and enterWidth or keyWidth
+            local margin = (key == "ENTER") and enterExtraMargin or 0
+
+            x = x + margin
+            local y = startY + (rowIndex - 1) * (keyHeight + spacing)
+
+            love.graphics.setColor(0.15, 0.15, 0.15)
+            love.graphics.rectangle("fill", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
+
+            love.graphics.setColor(colors.border)
+            love.graphics.rectangle("line", x, y, thisKeyWidth, keyHeight, 6 * scale, 6 * scale)
+
+            love.graphics.setColor(colors.buttonText)
+            local text = (key == "←") and "<" or key
+            local textWidth = buttonFont:getWidth(text)
+            local textHeight = buttonFont:getHeight()
+            love.graphics.print(text, x + (thisKeyWidth - textWidth) / 2,
+                                y + (keyHeight - textHeight) / 2)
+
+            x = x + thisKeyWidth + spacing
+        end
+    end
+end
+
+function drawVirtualKeyboardHard()
+    local content = getContentArea()
+    local scale = getScale()
+    local keyHeight = math.floor(85 * scale) -- Maior
+    local keyWidth = math.floor(75 * scale) -- Maior
+    local enterWidth = math.floor(180 * scale) -- Maior
+    local spacing = math.floor(15 * scale) -- Maior
+    local enterExtraMargin = math.floor(30 * scale)
+    local startY = content.height * 0.63 -- posicionamento responsivo
 
     for rowIndex, row in ipairs(keyboardLayout) do
         local totalWidth = 0
@@ -548,14 +646,6 @@ function love.mousepressed(x, y, button)
         end
     end
 end
-
-local backStates = {
-    instructions = true,
-    difficulty = true,
-    game = true,
-    game_medium = true,
-    game_hard = true
-}
 
 function love.keypressed(key)
     if key == "escape" then
