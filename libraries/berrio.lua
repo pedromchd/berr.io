@@ -172,29 +172,4 @@ function Berrio:reset()
     self:selectRandomAnswer()
 end
 
--- Exemplo de uso:
-local game = Berrio:new("respostas.csv", "tentativas.csv")
-
--- Fazer uma tentativa
-local result = game:makeGuess("CARRO")
-
-if result.success then
-    print("Tentativa válida!")
-    print("Match perfeito:", result.match.perfect)
-
-    -- Exibir resultado das letras
-    for i, letterResult in ipairs(result.match.letters) do
-        local status = letterResult == true and "VERDE" or letterResult == false and "AMARELO" or
-                           "CINZA"
-        print("Letra", i, ":", status)
-    end
-else
-    print("Erro:", result.message)
-end
-
--- Estado do jogo
-local state = game:getGameState()
-print("Tentativa atual:", state.currentAttempt)
-print("Jogo terminado:", state.gameOver)
-
 return Berrio
