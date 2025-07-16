@@ -83,7 +83,7 @@ local function processKeyInput(key)
                                                                      updateKeyboardStateMultiGrid)
 end
 
--- LÖVE2D - Inicialização do jogo
+-- Inicia o jogo
 function love.load()
     love.window.setMode(screenWidth, screenHeight)
     updateScreenDimensions()
@@ -120,7 +120,7 @@ function love.resize(w, h)
     centerButtons(difficultyButtons)
 end
 
--- LÖVE2D - Atualização a cada frame
+-- Atualiza a cada frame
 function love.update(dt)
     local mouseX, mouseY = love.mouse.getPosition()
     bounceTime = bounceTime + dt
@@ -143,7 +143,7 @@ function love.update(dt)
     end
 end
 
--- LÖVE2D - Desenho na tela
+-- Desenha na tela
 function love.draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(backgroundImage, 0, 0, 0, screenWidth / backgroundImage:getWidth(),
@@ -186,7 +186,7 @@ function love.draw()
     ui.drawDebugInfo(showDebug, debugInfo, textFont)
 end
 
--- LÖVE2D - Cliques do mouse
+-- Cliques do mouse
 function love.mousepressed(x, y, button)
     if button == 1 then
         if stateManager.getState() == "menu" then
@@ -216,7 +216,7 @@ function love.mousepressed(x, y, button)
     end
 end
 
--- LÖVE2D - Teclas pressionadas
+-- Teclas pressionadas
 function love.keypressed(key)
     if key == "escape" then
         local backState = stateManager.getBackState()
