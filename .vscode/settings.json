@@ -1,0 +1,22 @@
+{
+    "editor.rulers": [100],
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.stickyTabStops": true,
+    "files.insertFinalNewline": true,
+    "Lua.codeLens.enable": true,
+    "Lua.diagnostics.globals": [
+        "love"
+    ],
+    "Lua.format.enable": true,
+    "Lua.format.defaultConfig": {
+        "indent_type": "Spaces",
+        "indent_size": "4",
+        "max_line_length": "100",
+        "trailing_table_separator": "smart"
+    },
+    "vscode-lua-format.configPath": "./lua.config",
+    "[lua]": {
+        "editor.defaultFormatter": "Koihik.vscode-lua-format"
+    }
+}
