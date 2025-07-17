@@ -64,6 +64,10 @@ end
 function assetManager.loadAll()
     assetManager.loadImage("background", "assets/images/fundo.jpg")
     assetManager.loadSound("click", "assets/audio/click_sound.mp3", "static")
+    assetManager.loadSound("invalid_guess", "assets/audio/invalid_guess_sound.oga", "static")
+    assetManager.loadSound("win", "assets/audio/win_sound.mp3", "static")
+    assetManager.loadSound("backspace", "assets/audio/backspace_sound.mp3", "static")
+    assetManager.loadSound("enter", "assets/audio/enter_sound.ogg", "static")
     assets.fonts.base = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf", 12)
 end
 

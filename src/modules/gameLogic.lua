@@ -51,10 +51,22 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
 
     if key == "backspace" or key == "←" then
         if #currentInput > 0 then
+            -- Play backspace sound
+            local backspaceSound = assetManager.getSound("backspace")
+            if backspaceSound then
+                love.audio.play(backspaceSound)
+            end
+            
             currentInput = currentInput:sub(1, -2)
             currentCol = math.max(1, currentCol - 1)
         end
     elseif key == "return" or key == "enter" or key == "ENTER" then
+        -- Play enter sound
+        local enterSound = assetManager.getSound("enter")
+        if enterSound then
+            love.audio.play(enterSound)
+        end
+        
         if #currentInput == 5 then
             local results = {}
             local anyGameOver = false
@@ -160,6 +172,11 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
 
                 if allGridsFinished then
                     if allWon then
+                        -- Play win sound
+                        local winSound = assetManager.getSound("win")
+                        if winSound then
+                            love.audio.play(winSound)
+                        end
                         showMessage("Parabéns! Você acertou todos os grids!", "green", 3)
                     else
                         local wonCount = 0
@@ -168,6 +185,11 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                         end
 
                         if wonCount > 0 then
+                            -- Play win sound for partial wins too
+                            local winSound = assetManager.getSound("win")
+                            if winSound then
+                                love.audio.play(winSound)
+                            end
                             showMessage("Você acertou " .. wonCount .. " de " .. #results ..
                                             " grids!", "yellow", 3)
                         else
@@ -182,9 +204,20 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                         end
                     end
                 elseif allWon then
+                    -- Play win sound when all grids are won before reaching max attempts
+                    local winSound = assetManager.getSound("win")
+                    if winSound then
+                        love.audio.play(winSound)
+                    end
                     showMessage("Parabéns! Você acertou todos os grids!", "green", 3)
                 end
             else
+                -- Play invalid guess sound
+                local invalidSound = assetManager.getSound("invalid_guess")
+                if invalidSound then
+                    love.audio.play(invalidSound)
+                end
+                
                 local errorMessage = "Digite uma palavra de 5 letras"
                 for _, result in pairs(results) do
                     if result and result.message then
@@ -195,9 +228,20 @@ function gameLogic.processKeyInput(key, currentInput, currentRow, currentCol, sh
                 showMessage(errorMessage, "red", 2)
             end
         else
+            -- Play invalid guess sound for incomplete words
+            local invalidSound = assetManager.getSound("invalid_guess")
+            if invalidSound then
+                love.audio.play(invalidSound)
+            end
             showMessage("Digite uma palavra de 5 letras", "yellow", 2)
         end
     elseif key:match("^%a$") and #currentInput < 5 then
+        -- Play click sound for letter keys
+        local clickSound = assetManager.getSound("click")
+        if clickSound then
+            love.audio.play(clickSound)
+        end
+        
         currentInput = currentInput .. key:upper()
         currentCol = currentCol + 1
     end
