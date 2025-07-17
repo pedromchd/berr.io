@@ -62,14 +62,12 @@ function utils.loadFonts(screenWidth, screenHeight)
     local buttonFontSize = 30
     local textFontSize = 18
 
-    local titleFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf",
-                                            math.floor(titleFontSize * scale))
-    local difficultyTitleFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf",
-                                                      math.floor(difficultyTitleFontSize * scale))
-    local buttonFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf",
-                                             math.floor(buttonFontSize * scale))
-    local textFont = love.graphics.newFont("assets/fonts/PressStart2P-Regular.ttf",
-                                           math.floor(textFontSize * scale))
+    local assetManager = require("src.systems.assetManager")
+    
+    local titleFont = assetManager.loadFont("titleFont", "assets/fonts/PressStart2P-Regular.ttf", math.floor(titleFontSize * scale))
+    local difficultyTitleFont = assetManager.loadFont("difficultyTitleFont", "assets/fonts/PressStart2P-Regular.ttf", math.floor(difficultyTitleFontSize * scale))
+    local buttonFont = assetManager.loadFont("buttonFont", "assets/fonts/PressStart2P-Regular.ttf", math.floor(buttonFontSize * scale))
+    local textFont = assetManager.loadFont("textFont", "assets/fonts/PressStart2P-Regular.ttf", math.floor(textFontSize * scale))
 
     return titleFont, difficultyTitleFont, buttonFont, textFont
 end

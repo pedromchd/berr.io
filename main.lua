@@ -22,7 +22,12 @@ local showDebug = false
 local screenWidth, screenHeight = love.graphics.getWidth(), love.graphics.getHeight()
 local backgroundImage
 local clickSound
+local invalidGuessSound
+local winSound
+local backspaceSound
+local enterSound
 local titleFont, difficultyTitleFont, buttonFont, textFont
+
 local colors = config.colors
 local keyboardLayout = config.keyboardLayout
 local menuButtons
@@ -92,6 +97,10 @@ function love.load()
     assetManager.loadAll()
     backgroundImage = assetManager.getImage("background")
     clickSound = assetManager.getSound("click")
+    invalidGuessSound = assetManager.getSound("invalid_guess")
+    winSound = assetManager.getSound("win")
+    backspaceSound = assetManager.getSound("backspace")
+    enterSound = assetManager.getSound("enter")
 
     loadFonts()
 
@@ -209,7 +218,11 @@ function love.mousepressed(x, y, button)
             local keyPressed = utils.getVirtualKeyPressed(x, y, stateManager.getState(),
                                                           keyboardLayout, screenWidth, screenHeight)
             if keyPressed then
-                love.audio.play(clickSound)
+                -- Don't play click sound for backspace or enter, they will be handled in processKeyInput
+                -- Click sound for letter keys will also be handled in processKeyInput
+                if keyPressed ~= "backspace" and keyPressed ~= "return" and not keyPressed:match("^%a$") then
+                    love.audio.play(clickSound)
+                end
                 processKeyInput(keyPressed)
             end
         end

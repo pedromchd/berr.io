@@ -49,7 +49,11 @@ berr.io/
     ├── images/
     │   └── fundo.jpg           # Imagem de fundo
     ├── audio/
-    │   └── click_sound.mp3     # Som de clique
+    │   ├── click_sound.mp3     # Som de clique
+    │   ├── invalid_guess_sound.oga # Som de tentativa inválida
+    │   ├── win_sound.mp3       # Som de vitória
+    │   ├── backspace_sound.mp3 # Som de backspace
+    │   └── enter_sound.ogg     # Som de enter
     ├── fonts/
     │   └── PressStart2P-Regular.ttf # Fonte do jogo
     └── data/
